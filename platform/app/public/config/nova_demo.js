@@ -4,6 +4,7 @@ window.config = {
   modes: [],
   extensions: [],
   showStudyList: true,
+  showPatientInfo: 'visible',
   showWarningMessageForCrossOrigin: false,
   strictZSpacingForVolumeViewport: false,
   showCPUFallbackMessage: false,

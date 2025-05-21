@@ -1,9 +1,9 @@
 {
-  "name": "OHIF Viewer",
+  "name": "NOVA Viewer",
   "short_name": "Viewer",
-  "description": "OHIF Viewer",
+  "description": "NOVA Viewer",
   "dir": "auto",
-  "lang": "en-US",
+  "lang": "es",
   "orientation": "any",
   "icons": [
     {

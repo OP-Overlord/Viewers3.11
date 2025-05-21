@@ -82,6 +82,11 @@ RUN ./.docker/compressDist.sh
 # which runs Nginx using Alpine Linux
 FROM nginxinc/nginx-unprivileged:1.27-alpine as final
 #RUN apk add --no-cache bash
+
+USER root
+RUN apk add --no-cache bash
+RUN apk add --no-cache nano
+
 ARG PUBLIC_URL=/v3/
 ENV PUBLIC_URL=${PUBLIC_URL}
 ARG PORT=80

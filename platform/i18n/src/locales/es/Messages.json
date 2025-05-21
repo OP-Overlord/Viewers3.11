@@ -1,0 +1,16 @@
+{
+  "Display Set Messages": "Mostrar conjunto de mensajes",
+  "1": "Instancias no validas dentro de la serie.",
+  "2": "Información de posición vacia.",
+  "3": "No disponible para reconstrucción de volumen 3D.",
+  "4": "Información de la medida de los pixeles no diponible.",
+  "5": "Información de la orientación no diponible.",
+  "6": "Información de la posición no diponible.",
+  "7": "Frames vacios.",
+  "8": "Espacio entre pixeles irregular.",
+  "9": "Dimensiones inconsistentes entre frames.",
+  "10": "Frames con número de componenetes inconsistente.",
+  "11": "Frames con orientaciones inconsistentes.",
+  "12": "Información de la posición inconsistente.",
+  "13": "Tipo de imágen no soportada."
+}

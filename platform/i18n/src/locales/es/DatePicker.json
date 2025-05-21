@@ -1,5 +1,9 @@
 {
   "Clear dates": "Borrar fechas",
   "End Date": "Fecha fin",
-  "Start Date": "Fecha inicio"
+  "Start Date": "Fecha inicio",
+  "Close": "$t(Common:Close)",
+  "Last 7 days": "Ultimos 7 días",
+  "Last 30 days": "Ultimos 30 días",
+  "Today": "Hoy"
 }
