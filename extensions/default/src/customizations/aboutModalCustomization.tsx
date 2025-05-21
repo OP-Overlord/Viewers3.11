@@ -12,23 +12,18 @@ function AboutModalDefault() {
 
   return (
     <AboutModal className="w-[400px]">
-      <AboutModal.ProductName>OHIF Viewer</AboutModal.ProductName>
+      <AboutModal.ProductName>NOVA Viewer</AboutModal.ProductName>
       <AboutModal.ProductVersion>{main}</AboutModal.ProductVersion>
-      {beta && <AboutModal.ProductBeta>{beta}</AboutModal.ProductBeta>}
 
       <AboutModal.Body>
         <AboutModal.DetailItem
-          label="Commit Hash"
-          value={commitHash}
-        />
-        <AboutModal.DetailItem
-          label="Current Browser & OS"
+          label="Buscador Actual & Sistema Operativo"
           value={`${browser}, ${os}`}
         />
         <AboutModal.SocialItem
-          icon="SocialGithub"
-          url="OHIF/Viewers"
-          text="github.com/OHIF/Viewers"
+          icon="Info"
+          url="https://novaimaging.co/"
+          text="www.novaimaging.co"
         />
       </AboutModal.Body>
     </AboutModal>

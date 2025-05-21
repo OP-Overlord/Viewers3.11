@@ -38,13 +38,13 @@ function addLocales(newLocales) {
 const locizeOptions = {
   projectId: process.env.LOCIZE_PROJECTID,
   apiKey: process.env.LOCIZE_API_KEY,
-  referenceLng: 'en-US',
-  fallbacklng: 'en-US',
+  referenceLng: 'es',
+  fallbacklng: 'es',
 };
 
 const envUseLocize = !!process.env.USE_LOCIZE;
 const envApiKeyAvailable = !!process.env.LOCIZE_API_KEY;
-const DEFAULT_LANGUAGE = 'en-US';
+const DEFAULT_LANGUAGE = 'es';
 
 function initI18n(
   detection = detectionOptions,

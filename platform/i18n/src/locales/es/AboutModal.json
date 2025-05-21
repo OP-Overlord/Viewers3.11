@@ -1,14 +1,14 @@
 {
-  "About OHIF Viewer": "Sobre OHIF Viewer",
+  "About OHIF Viewer": "Acerca de NOVA Viewer",
   "Browser": "Navegador",
-  "Build number": "Número de compilación",
-  "Last master commits": "Últimos Master Commits",
+  "Build number": "",
+  "Last master commits": "",
   "More details": "Más detalles",
   "Name": "Nombre",
   "OS": "SO",
-  "Report an issue": "Informar un problema",
-  "Repository URL": "URL del repositorio",
+  "Report an issue": "",
+  "Repository URL": "",
   "Value": "Valor",
   "Version information": "Información de la versión",
-  "Visit the forum": "Visita el foro"
+  "Visit the forum": ""
 }

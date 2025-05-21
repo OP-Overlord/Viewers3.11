@@ -1,8 +1,9 @@
 {
   "About": "Acerca de",
   "Back to Viewer": "Volver al visor",
-  "INVESTIGATIONAL USE ONLY": "SOLO USO PARA INVESTIGACIÓN",
+  "INVESTIGATIONAL USE ONLY": "",
   "Options": "Opciones",
   "Preferences": "Preferencias",
-  "Study list": "Lista de estudios"
+  "Study list": "Lista de estúdios",
+  "Logout": "Cerrar sesión"
 }

@@ -199,6 +199,7 @@ import ExternalLink from './Sources/ExternalLink';
 import OHIFLogoColorDarkBackground from './Sources/OHIFLogoColorDarkBackground';
 import Magnifier from './Sources/Magnifier';
 import LoadingOHIFMark from './Sources/LoadingOHIFMark';
+import LoadingNOVAMark from './Sources/LoadingNOVAMark';
 import ArrowLeftBold from './Sources/ArrowLeftBold';
 import Pencil from './Sources/Pencil';
 import NotificationWarning from './Sources/NotificationWarning';
@@ -537,6 +538,7 @@ export const Icons = {
   Play,
   Link,
   LoadingOHIFMark,
+  LoadingNOVAMark,
   ArrowLeft: ChevronClosed,
   ArrowRight,
   ArrowLeftBold,
@@ -601,7 +603,7 @@ export const Icons = {
   // Aliases
   'prev-arrow': (props: IconProps) => Icons.ArrowLeftBold(props),
   'next-arrow': (props: IconProps) => Icons.ArrowRightBold(props),
-  'loading-ohif-mark': (props: IconProps) => LoadingOHIFMark(props),
+  'loading-ohif-mark': (props: IconProps) => LoadingNOVAMark(props),
   magnifier: (props: IconProps) => Magnifier(props),
   'status-alert-warning': (props: IconProps) => StatusWarning(props),
   'logo-dark-background': (props: IconProps) => OHIFLogoColorDarkBackground(props),

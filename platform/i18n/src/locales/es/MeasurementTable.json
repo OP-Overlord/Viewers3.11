@@ -3,9 +3,13 @@
   "Delete": "Borrar",
   "Description": "Descripción",
   "MAX": "Máximo",
+  "Measurements": "Medida",
+  "No, do not ask again": "No volver a preguntar",
   "NonTargets": "No objetivos",
   "Relabel": "Re-etiquetar",
   "Targets": "Objetivos",
   "Export": "Exportar",
-  "Create Report": "Crear reporte"
+  "Create Report": "Crear reporte",
+  "No tracked measurements": "Medidas sin seguimiento",
+  "Track measurements for this series?": "Hacer seguimiento de medida para esta serie?"
 }

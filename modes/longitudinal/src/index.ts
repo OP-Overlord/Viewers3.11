@@ -132,6 +132,8 @@ function modeFactory({ modeConfiguration }) {
 
       toolbarService.updateSection('MeasurementTools', [
         'Length',
+        'Angle',
+        'CobbAngle',
         'Bidirectional',
         'ArrowAnnotate',
         'EllipticalROI',
@@ -153,8 +155,6 @@ function modeFactory({ modeConfiguration }) {
         'invert',
         'Probe',
         'Cine',
-        'Angle',
-        'CobbAngle',
         'Magnify',
         'CalibrationLine',
         'TagBrowser',

@@ -1,9 +1,14 @@
 {
+  "Close": "Cerrar",
   "Image": "Imagen",
   "Layout": "Formato",
+  "LOAD": "Cargar",
   "Measurements": "Medidas",
+  "mm": "mm",
   "More": "Más",
   "Next": "Siguiente",
+  "No": "No",
+  "NoStudyDate": "Sin fecha de estudio",
   "Play": "Play",
   "Previous": "Anterior",
   "Reset": "Restaurar",
@@ -11,5 +16,6 @@
   "Series": "Secuencia",
   "Show": "Mostrar",
   "Stop": "Detener",
-  "StudyDate": "Fecha de estudo"
+  "StudyDate": "Fecha de estudio",
+  "Yes": "Si"
 }

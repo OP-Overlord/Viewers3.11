@@ -2,5 +2,13 @@
   "Cancel": "$t(Buttons:Cancel)",
   "Reset to defaults": "$t(Buttons:Reset to defaults)",
   "Save": "$t(Buttons:Save)",
-  "User preferences": "Preferencias de Usuario"
+  "User preferences": "Preferencias de Usuario",
+  "No hotkeys found": "No se encontrarón atajos de teclados configurados.",
+  "ResetDefaultMessage": "Preferencias reseteadas con exito. <br />Debes <strong>Guardar</strong> para ver reflejada esta acción.",
+  "SaveMessage": "Preferencias guardadas exitosamente!",
+  "Function": "Función",
+  "Shortcut": "Shortcut",
+  "Language": "Lenguaje",
+  "Hotkeys": "Atajo de Teclas",
+  "General": "General"
 }

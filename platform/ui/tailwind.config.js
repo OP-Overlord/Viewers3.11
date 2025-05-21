@@ -29,10 +29,10 @@ module.exports = {
       },
 
       primary: {
-        light: '#5acce6',
-        main: '#0944b3',
-        dark: '#090c29',
-        active: '#348cfd',
+        light: '#7986cb',
+        main: '#fefefe',
+        dark: '#131f34',
+        active: '#fff',
       },
       inputfield: {
         main: '#3a3f99',
@@ -42,9 +42,9 @@ module.exports = {
       },
 
       secondary: {
-        light: '#3a3f99',
+        light: '#21262d',
         main: '#2b166b',
-        dark: '#041c4a',
+        dark: '#071326',
         active: '#1f1f27',
       },
 
