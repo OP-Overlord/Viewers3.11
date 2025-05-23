@@ -68,6 +68,7 @@ COPY --link --exclude=yarn.lock --exclude=package.json --exclude=Dockerfile . .
 ENV QUICK_BUILD true
 # ENV GENERATE_SOURCEMAP=false
 ARG APP_CONFIG=config/nova_demo.js
+#ARG APP_CONFIG=config/demo.js
 ARG PUBLIC_URL=/v3/
 ENV PUBLIC_URL=${PUBLIC_URL}
 
@@ -98,7 +99,7 @@ RUN chmod 777 /usr/src/entrypoint.sh
 COPY --from=builder /usr/src/app/platform/app/dist /usr/share/nginx/html${PUBLIC_URL}
 # Copy paths that are renamed/redirected generally
 # Microscopy libraries depend on root level include, so must be copied
-COPY --from=builder /usr/src/app/platform/app/dist/dicom-microscopy-viewer /usr/share/nginx/html/dicom-microscopy-viewer
+#COPY --from=builder /usr/src/app/platform/app/dist/dicom-microscopy-viewer /usr/share/nginx/html/dicom-microscopy-viewer
 
 # In entrypoint.sh, app-config.js might be overwritten, so chmod it to be writeable.
 # The nginx user cannot chmod it, so change to root.

@@ -1,8 +1,8 @@
 {
   "Context": "Contexto",
-  "Error Message": "Mensaje de error",
-  "Something went wrong": "Algo salió mal",
+  "Error Message": "",
+  "Something went wrong": "",
   "in": "en",
-  "Sorry, something went wrong there. Try again.": "Disculpa, algo salió mal. Intente más tarde o contacte a su administrador de sistemas.",
-  "Stack Trace": "Traza de error"
+  "Sorry, something went wrong there. Try again.": "",
+  "Stack Trace": ""
 }

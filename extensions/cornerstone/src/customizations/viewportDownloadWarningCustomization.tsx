@@ -1,6 +1,6 @@
 export default {
   'viewportDownload.warningMessage': {
     enabled: true,
-    value: 'Not For Diagnostic Use',
+    value: 'No para uso diagnostico',
   },
 };
