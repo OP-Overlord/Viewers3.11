@@ -14,7 +14,15 @@ const defaultProtocol = {
   modifiedDate: '2023-04-01',
   availableTo: {},
   editableBy: {},
-  protocolMatchingRules: [],
+  protocolMatchingRules: [{
+      id: 'StudyHasImages',
+      weight: 10,
+      attribute: 'numberOfDisplaySetsWithImages',
+      constraint: {
+        greaterThan: 0,
+      },
+    },
+  ],
   toolGroupIds: ['default'],
   // -1 would be used to indicate active only, whereas other values are
   // the number of required priors referenced - so 0 means active with
