@@ -50,24 +50,6 @@ window.config = {
             contentF: ({ instance, formatters: { formatTime } }) =>
               formatTime(instance.StudyTime),
           },
-          {
-	    id: 'RadiationDoseOverlay',
-	    customizationType: 'ohif.overlayItem',
-	    label: 'CTDIvol:',
-	    title: 'Dosis de radiación (vol)',
-	    color: 'white',
-	    condition: ({ instance }) => instance && instance.CTDIvol,
-	    contentF: ({ instance }) => `Dosis radiación: ${parseFloat(instance.CTDIvol).toFixed(1)} mGy`,
-	  },
-	  {
-	    id: 'ExposureTimeOverlay',
-	    customizationType: 'ohif.overlayItem',
-	    label: 'Exposición:',
-	    title: 'Tiempo de exposición',
-	    color: 'white',
-	    condition: ({ instance }) => instance && instance.ExposureTime,
-	    contentF: ({ instance }) => `Tiempo de exposición: ${parseFloat(instance.ExposureTime).toFixed(1)} ms`,
-	  },
         ]
       }
     },
