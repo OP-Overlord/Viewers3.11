@@ -3,6 +3,335 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.11.0-beta.72](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.71...v3.11.0-beta.72) (2025-07-03)
+
+
+### Bug Fixes
+
+* add force to remove image from cache ([#5176](https://github.com/OHIF/Viewers/issues/5176)) ([e277303](https://github.com/OHIF/Viewers/commit/e2773033959dc029cc6c698dfd65e2ed03b51a26))
+
+
+
+
+
+# [3.11.0-beta.71](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.70...v3.11.0-beta.71) (2025-07-03)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.70](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.69...v3.11.0-beta.70) (2025-07-03)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.69](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.68...v3.11.0-beta.69) (2025-07-02)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.68](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.67...v3.11.0-beta.68) (2025-06-27)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.67](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.66...v3.11.0-beta.67) (2025-06-27)
+
+
+### Bug Fixes
+
+* **segmentation:** Changes to fix problems with non hydrated/loaded segmentations to be viewable when switching hanging protocols (e.g. MPR) ([#5139](https://github.com/OHIF/Viewers/issues/5139)) ([c2624f1](https://github.com/OHIF/Viewers/commit/c2624f116d8d19911fb9773be263fa647fce0dd9))
+
+
+
+
+
+# [3.11.0-beta.66](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.65...v3.11.0-beta.66) (2025-06-27)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.65](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.64...v3.11.0-beta.65) (2025-06-26)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.64](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.63...v3.11.0-beta.64) (2025-06-26)
+
+
+### Features
+
+* **labelmap:** Add labelmap segmentation in OHIF ([#5158](https://github.com/OHIF/Viewers/issues/5158)) ([9824f79](https://github.com/OHIF/Viewers/commit/9824f79177f4a1db175f2cf27732b08bb271e6be))
+
+
+
+
+
+# [3.11.0-beta.63](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.62...v3.11.0-beta.63) (2025-06-26)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.62](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.61...v3.11.0-beta.62) (2025-06-25)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.61](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.60...v3.11.0-beta.61) (2025-06-25)
+
+
+### Features
+
+* Ultrasound Pleura B-line Annotation Mode & Extension ([#5061](https://github.com/OHIF/Viewers/issues/5061)) ([226f9b0](https://github.com/OHIF/Viewers/commit/226f9b0773900aec29ec22f52f39f33e629dc15b))
+
+
+
+
+
+# [3.11.0-beta.60](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.59...v3.11.0-beta.60) (2025-06-24)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.59](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.58...v3.11.0-beta.59) (2025-06-20)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.58](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.57...v3.11.0-beta.58) (2025-06-18)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.57](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.56...v3.11.0-beta.57) (2025-06-18)
+
+
+### Bug Fixes
+
+* **getToolbarModule:** fix enabled state of image slice sync ([#5136](https://github.com/OHIF/Viewers/issues/5136)) ([dc829c8](https://github.com/OHIF/Viewers/commit/dc829c8fcad1ce1fc2e9aef446cc474d08e00835))
+
+
+
+
+
+# [3.11.0-beta.56](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.55...v3.11.0-beta.56) (2025-06-13)
+
+
+### Bug Fixes
+
+* **hp:** When reapplying an hp the display set selectors should be considered. ([#5074](https://github.com/OHIF/Viewers/issues/5074)) ([5311c94](https://github.com/OHIF/Viewers/commit/5311c941f7ebbfe8cc2943e3718245567c09a034))
+
+
+
+
+
+# [3.11.0-beta.55](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.54...v3.11.0-beta.55) (2025-06-11)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.54](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.53...v3.11.0-beta.54) (2025-06-11)
+
+
+### Features
+
+* **commandsModule:** Enhanced flipViewport and rotateViewport commands ([#5065](https://github.com/OHIF/Viewers/issues/5065)) ([4da7fc3](https://github.com/OHIF/Viewers/commit/4da7fc307f2054675510dd44062f8c94a37f9585))
+
+
+
+
+
+# [3.11.0-beta.53](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.52...v3.11.0-beta.53) (2025-06-11)
+
+
+### Bug Fixes
+
+* data-viewportId name is illegal, renamed to data-viewportid ([#5121](https://github.com/OHIF/Viewers/issues/5121)) ([75271ca](https://github.com/OHIF/Viewers/commit/75271ca416173ddb71972ed311f9d729443cf763))
+
+
+
+
+
+# [3.11.0-beta.52](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.51...v3.11.0-beta.52) (2025-06-10)
+
+
+### Bug Fixes
+
+* **markerlabelmap:** accept preview/reject preview not working when the marker annotation tools are active ([#5101](https://github.com/OHIF/Viewers/issues/5101)) ([26fd51f](https://github.com/OHIF/Viewers/commit/26fd51f53589244a47807106c3065e3926a16903))
+
+
+
+
+
+# [3.11.0-beta.51](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.50...v3.11.0-beta.51) (2025-06-09)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.50](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.49...v3.11.0-beta.50) (2025-06-09)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.49](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.48...v3.11.0-beta.49) (2025-06-07)
+
+
+### Bug Fixes
+
+* **WindowLevelActionMenu:** The window level menu must show different contents for 3D volume viewports ([#5113](https://github.com/OHIF/Viewers/issues/5113)) ([0afb3fc](https://github.com/OHIF/Viewers/commit/0afb3fc75314c1d8d6c50d13f31d5c2fc6849ce2))
+
+
+
+
+
+# [3.11.0-beta.48](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.47...v3.11.0-beta.48) (2025-06-05)
+
+
+### Bug Fixes
+
+* **touch:** Allow for multi-touch in OHIF ([#5099](https://github.com/OHIF/Viewers/issues/5099)) ([1a6aa09](https://github.com/OHIF/Viewers/commit/1a6aa09a7708c943af3a1d920489311b3a0ee5da))
+
+
+
+
+
+# [3.11.0-beta.47](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.46...v3.11.0-beta.47) (2025-06-02)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.46](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.45...v3.11.0-beta.46) (2025-06-02)
+
+
+### Bug Fixes
+
+* **segmentation:** Allow for debounced pub/sub events to be reliably cancelled when unsubscribed to. ([#5092](https://github.com/OHIF/Viewers/issues/5092)) ([38ed7ba](https://github.com/OHIF/Viewers/commit/38ed7ba744528f7c3289e8b795d549adbb7342d0))
+
+
+
+
+
+# [3.11.0-beta.45](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.44...v3.11.0-beta.45) (2025-05-30)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.44](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.43...v3.11.0-beta.44) (2025-05-29)
+
+
+### Features
+
+* create memo when manually adding and removing annotations ([#5051](https://github.com/OHIF/Viewers/issues/5051)) ([5891505](https://github.com/OHIF/Viewers/commit/5891505c51f82ecad22fb8182b88fb3fb52255b3))
+
+
+
+
+
+# [3.11.0-beta.43](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.42...v3.11.0-beta.43) (2025-05-29)
+
+
+### Bug Fixes
+
+* **ui:** Prevent unintended text selection and improve component behavior ([#5077](https://github.com/OHIF/Viewers/issues/5077)) ([c6327ac](https://github.com/OHIF/Viewers/commit/c6327acdc1c00e1f2922af54012c79b274252532))
+
+
+
+
+
+# [3.11.0-beta.42](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.41...v3.11.0-beta.42) (2025-05-28)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.41](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.40...v3.11.0-beta.41) (2025-05-26)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
+# [3.11.0-beta.40](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.39...v3.11.0-beta.40) (2025-05-26)
+
+
+### Bug Fixes
+
+* **capture:** Disable or enable the tool group based on the show flag. ([#5069](https://github.com/OHIF/Viewers/issues/5069)) ([ebfa1ff](https://github.com/OHIF/Viewers/commit/ebfa1ff5f22ea5318328722dd9f1929b37f16b0c))
+* **frame-view:** After pan and/or zoom, stack scroll is now synchronized for frame view ([#5067](https://github.com/OHIF/Viewers/issues/5067)) ([1873a84](https://github.com/OHIF/Viewers/commit/1873a8405f6c8d112035d47049582c52f00f640b))
+
+
+
+
+
+# [3.11.0-beta.39](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.38...v3.11.0-beta.39) (2025-05-26)
+
+
+### Bug Fixes
+
+* **router:** Expose the react router from the worklist too. ([#5062](https://github.com/OHIF/Viewers/issues/5062)) ([14f5f0c](https://github.com/OHIF/Viewers/commit/14f5f0c074738ba251b40c6a8ebd26bc287ceb4e))
+
+
+
+
+
+# [3.11.0-beta.38](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.37...v3.11.0-beta.38) (2025-05-24)
+
+**Note:** Version bump only for package @ohif/extension-cornerstone
+
+
+
+
+
 # [3.11.0-beta.37](https://github.com/OHIF/Viewers/compare/v3.11.0-beta.36...v3.11.0-beta.37) (2025-05-16)
 
 **Note:** Version bump only for package @ohif/extension-cornerstone
