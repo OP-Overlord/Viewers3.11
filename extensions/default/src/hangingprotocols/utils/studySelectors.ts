@@ -11,12 +11,4 @@ export const studyWithImages: MatchingRule[] = [
       greaterThan: 0,
     },
   },
-  {
-    id: 'ContainsDXorCT',
-    weight: 300,
-    attribute: 'modalitiesInStudy',
-    constraint: {
-      contains: ['CT'],
-    },
-  },
 ];
