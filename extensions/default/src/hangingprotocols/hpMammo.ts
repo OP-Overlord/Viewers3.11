@@ -11,7 +11,7 @@ import {
 
 const rightDisplayArea = {
   storeAsInitialCamera: true,
-  imageArea: [0.8, 0.8],
+  imageArea: [1, 1],
   imageCanvasPoint: {
     imagePoint: [0, 0.5],
     canvasPoint: [0, 0.5],
@@ -20,7 +20,7 @@ const rightDisplayArea = {
 
 const leftDisplayArea = {
   storeAsInitialCamera: true,
-  imageArea: [0.8, 0.8],
+  imageArea: [1, 1],
   imageCanvasPoint: {
     imagePoint: [1, 0.5],
     canvasPoint: [1, 0.5],
@@ -34,7 +34,7 @@ const hpMammography = {
   protocolMatchingRules: [
     {
       id: 'Mammography',
-      weight: 150,
+      weight: 550,
       attribute: 'ModalitiesInStudy',
       constraint: {
         contains: 'MG',
@@ -45,7 +45,7 @@ const hpMammography = {
       id: 'numberOfImages',
       attribute: 'numberOfDisplaySetsWithImages',
       constraint: {
-        greaterThan: 2,
+        greaterThan: 3,
       },
       required: true,
     },
