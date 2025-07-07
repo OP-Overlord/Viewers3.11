@@ -36,8 +36,15 @@ const LCCSeriesMatchingRules = [
     weight: 5,
     attribute: 'PatientOrientation',
     constraint: {
-      contains: 'L',
+      contains: ['A', 'R'],
     },
+  },
+  {
+    attribute: 'PatientOrientation',
+    constraint: {
+      doesNotEqual: ['P', 'L'],
+    },
+    required: true,
   },
   {
     weight: 20,
@@ -74,7 +81,7 @@ const RCCSeriesMatchingRules = [
     weight: 20,
     attribute: 'SeriesDescription',
     constraint: {
-      contains: 'CC',
+      contains: 'R CC',
     },
   },
 ];
@@ -88,7 +95,6 @@ const LMLOSeriesMatchingRules = [
     },
   },
   {
-    weight: 0,
     attribute: 'ViewCode',
     constraint: {
       doesNotEqual: 'SCT:399162004',
@@ -96,17 +102,38 @@ const LMLOSeriesMatchingRules = [
     required: true,
   },
   {
-    weight: 5,
+    weight: 10,
     attribute: 'PatientOrientation',
     constraint: {
-      equals: ['A', 'R'],
+      equals: ['A', 'FR'],
     },
+  },
+  {
+    attribute: 'PatientOrientation',
+    constraint: {
+      doesNotEqual: ['P', 'FL'],
+    },
+    required: true,
   },
   {
     weight: 20,
     attribute: 'SeriesDescription',
     constraint: {
       contains: 'L MLO',
+    },
+  },
+  {
+    attribute: 'SeriesDescription',
+    required: true,
+    constraint: {
+      doesNotContain: 'CC',
+    },
+  },
+  {
+    attribute: 'SeriesDescription',
+    required: true,
+    constraint: {
+      doesNotContain: 'R MLO',
     },
   },
 ];
@@ -127,25 +154,18 @@ const RMLOSeriesMatchingRules = [
     required: true,
   },
   {
+    weight: 10,
     attribute: 'PatientOrientation',
     constraint: {
-      doesNotContain: ['P', 'FL'],
+      equals: ['P', 'FL'],
+    },
+  },
+  {
+    attribute: 'PatientOrientation',
+    constraint: {
+      doesNotEqual: ['A', 'FR'],
     },
     required: true,
-  },
-  {
-    weight: 5,
-    attribute: 'PatientOrientation',
-    constraint: {
-      equals: ['P', 'L'],
-    },
-  },
-  {
-    weight: 5,
-    attribute: 'PatientOrientation',
-    constraint: {
-      equals: ['A', 'FR'],
-    },
   },
   {
     weight: 20,
@@ -165,9 +185,8 @@ const RMLOSeriesMatchingRules = [
     attribute: 'SeriesDescription',
     required: true,
     constraint: {
-      doesNotEqual: 'L MLO',
+      doesNotContain: 'L MLO',
     },
-    required: true,
   },
 ];
 

@@ -8,11 +8,25 @@ export const seriesWithImages: MatchingRule[] = [
     constraint: {
       greaterThan: { value: 0 },
     },
-    weight: 1,
-    required: true,
+    weight: 2,
+    //required: true,
   },
   // This display set will select the specified items by preference
   // It has no affect if nothing is specified in the URL.
+  {
+    attribute: 'Rows',
+    constraint: {
+      greaterThan: { value: 0 },
+    },
+    weight: 1,
+  },
+  {
+    attribute: 'Columns',
+    constraint: {
+      greaterThan: { value: 0 },
+    },
+    weight: 1,
+  },
   {
     attribute: 'isDisplaySetFromUrl',
     weight: 20,
