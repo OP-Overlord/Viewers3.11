@@ -69,6 +69,7 @@
     "@ohif/i18n": "3.11.0-beta.72",
     "@ohif/mode-basic-dev-mode": "3.11.0-beta.72",
     "@ohif/mode-longitudinal": "3.11.0-beta.72",
+    "@ohif/mode-mobil": "3.11.0-beta.72",
     "@ohif/mode-microscopy": "3.11.0-beta.72",
     "@ohif/mode-test": "3.11.0-beta.72",
     "@ohif/mode-ultrasound-pleura-bline": "3.11.0-beta.72",

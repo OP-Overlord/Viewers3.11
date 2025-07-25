@@ -3,6 +3,25 @@ window.config = {
 
   customizationService: [
     {
+      'commandsModule.commands': {
+        $set: [
+          {
+            commandName: 'toggleViewportOverlays',
+            context: 'DEFAULT',
+            commandFn: ({ servicesManager }) => {
+              const { customizationService, viewportGridService } = servicesManager.services;
+
+              const currentValue = customizationService.get('viewportOverlay.visible') ?? true;
+              customizationService.set('viewportOverlay.visible', !currentValue);
+
+              const viewports = viewportGridService.getState()?.viewports || [];
+              viewportGridService.setState({ viewports: [...viewports] });
+            },
+          },
+        ]
+      }
+    },
+    {
       // Desactiva los tours
       'ohif.tours': {
         $set: []
@@ -18,7 +37,10 @@ window.config = {
             label: 'Estudio:',
             title: 'Descripción del estudio',
             color: 'white',
-            condition: ({ instance }) => instance && instance.StudyDescription,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.StudyDescription;
+            },
             contentF: ({ instance }) => instance.StudyDescription,
           },
           {
@@ -27,7 +49,10 @@ window.config = {
             label: 'Serie:',
             title: 'Nombre de la serie',
             color: 'white',
-            condition: ({ instance }) => instance && instance.SeriesDescription,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.SeriesDescription;
+            },
             contentF: ({ instance }) => instance.SeriesDescription,
           },
           {
@@ -36,7 +61,10 @@ window.config = {
             label: 'Fecha:',
             title: 'Fecha del estudio',
             color: 'white',
-            condition: ({ instance }) => instance && instance.StudyDate,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.StudyDate;
+            },
             contentF: ({ instance, formatters: { formatDate } }) =>
               formatDate(instance.StudyDate),
           },
@@ -46,34 +74,12 @@ window.config = {
             label: 'Hora:',
             title: 'Hora de adquisición',
             color: 'white',
-            condition: ({ instance }) => instance && instance.StudyTime,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.StudyTime;
+            },
             contentF: ({ instance, formatters: { formatTime } }) =>
               formatTime(instance.StudyTime),
-          },
-        ]
-      }
-    },
-    {
-      // Superposición en la parte inferior izquierda
-      'viewportOverlay.bottomLeft': {
-        $set: [
-          {
-            id: 'WindowLevel',
-            inheritsFrom: 'ohif.overlayItem.windowLevel'
-          },
-          {
-            id: 'ZoomLevel',
-            inheritsFrom: 'ohif.overlayItem.zoomLevel'
-          },
-          {
-            id: 'SliceThicknessOverlay',
-            customizationType: 'ohif.overlayItem',
-            label: 'Espesor:',
-            title: 'Espesor de corte',
-            color: 'white',
-            condition: ({ instance }) => instance && instance.SliceThickness,
-            contentF: ({ instance }) =>
-              `Espesor: ${instance.SliceThickness} mm`,
           },
         ]
       }
@@ -88,8 +94,10 @@ window.config = {
             label: 'Paciente:',
             title: 'Nombre del paciente',
             color: 'white',
-            condition: ({ instance }) =>
-              instance && instance.PatientName && instance.PatientName.Alphabetic,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.PatientName?.Alphabetic;
+            },
             contentF: ({ instance, formatters: { formatPN } }) =>
               formatPN(instance.PatientName.Alphabetic),
           },
@@ -99,7 +107,10 @@ window.config = {
             label: 'ID:',
             title: 'Identificación del paciente',
             color: 'white',
-            condition: ({ instance }) => instance && instance.PatientID,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.PatientID;
+            },
             contentF: ({ instance }) => instance.PatientID,
           },
           {
@@ -108,7 +119,10 @@ window.config = {
             label: 'Edad:',
             title: 'Edad del paciente',
             color: 'white',
-            condition: ({ instance }) => instance && instance.PatientAge,
+            condition: ({ instance, servicesManager }) => {
+              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return (visible !== false) && instance?.PatientAge;
+            },
             contentF: ({ instance }) => {
               const rawAge = instance.PatientAge;
               const value = parseInt(rawAge.slice(0, 3), 10);
@@ -165,9 +179,9 @@ window.config = {
       configuration: {
         friendlyName: 'NOVAPACS',
         name: 'NOVAPACS',
-        wadoUriRoot: 'https://pacs2.novaimaging.co/dcm4chee-arc/aets/NOVAPACS/wado',
-        qidoRoot: 'https://pacs2.novaimaging.co/dcm4chee-arc/aets/NOVAPACS/rs',
-        wadoRoot: 'https://pacs2.novaimaging.co/dcm4chee-arc/aets/NOVAPACS/rs',
+        wadoUriRoot: '',
+        qidoRoot: '/dicomweb',
+        wadoRoot: '/dicomweb',
         qidoSupportsIncludeField: true,
         imageRendering: 'wadors',
         thumbnailRendering: 'wadors',
@@ -241,6 +255,11 @@ window.config = {
     //   label: 'Next Series',
     //   keys: ['pageup'],
     // },
+    {
+      commandName: 'toggleViewportOverlays',
+      label: 'Toggle Overlays',
+      keys: ['o'], // o la tecla que prefieras
+    },
     { commandName: 'setZoomTool', label: 'Zoom', keys: ['z'] },
     // ~ Window level presets
     {

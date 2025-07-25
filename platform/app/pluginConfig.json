@@ -69,6 +69,9 @@
   ],
   "modes": [
     {
+      "packageName": "@ohif/mobil"
+    },
+    {
       "packageName": "@ohif/mode-longitudinal"
     },
     {
