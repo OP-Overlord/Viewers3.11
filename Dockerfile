@@ -50,7 +50,7 @@ RUN apt-get update && apt-get install -y build-essential python3
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 RUN npm install -g bun
-# RUN npm install -g lerna@7.4.2
+RUN npm install -g lerna@7.4.2
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
 # Do an initial install and then a final install
@@ -58,8 +58,15 @@ COPY package.json yarn.lock preinstall.js lerna.json ./
 COPY --parents ./addOns/package.json ./addOns/*/*/package.json ./extensions/*/package.json ./modes/*/package.json ./platform/*/package.json ./
 # Run the install before copying the rest of the files
 
+#RUN bun add -D lerna@^7 cross-env@^7
 RUN bun pm cache rm
-RUN bun install
+#ENV BUN_INSTALL_DEV=true
+
+RUN yarn install --no-save
+
+#ENV BUN_INSTALL_DEV=true
+#RUN bun add -d cross-env@^7
+
 # Copy the local directory
 COPY --link --exclude=yarn.lock --exclude=package.json --exclude=Dockerfile . .
 

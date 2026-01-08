@@ -1,0 +1,26 @@
+/* Ejemplo de estructura en nova-theme.css */
+.theme-nova {
+  /* paleta corporativa */
+  --primary-color: #3666ff;
+  --accent-color: #10b981;
+  --bg-color: #020617;
+  --text-color: #e5e7eb;
+}
+
+/* Toolbar, botones, fondos, etc. */
+.theme-nova [data-cy$='-btn'] svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* Ajusta el toolbar flotante al lado izquierdo, con padding para el logo */
+.theme-nova .absolute.left-1\/2.top-1\/2 {
+  left: 18rem; /* padding desde el borde izquierdo */
+  top: 0.3rem; /* algo por debajo del header/logo */
+  transform: translate(0, 0); /* quita el centrado */
+}
+
+/* Ajustar el espacio entre botones del toolbar principal */
+.theme-nova .relative.flex.justify-center.gap-\[4px\] {
+  gap: 1.1rem !important; /* ejemplo = 12px */
+}

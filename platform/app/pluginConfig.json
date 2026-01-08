@@ -65,12 +65,13 @@
     {
       "packageName": "@ohif/extension-ultrasound-pleura-bline",
       "version": "3.0.0"
+    },
+    {
+      "packageName": "nova-measures",
+      "version": "1.0.0"
     }
   ],
   "modes": [
-    {
-      "packageName": "@ohif/mobil"
-    },
     {
       "packageName": "@ohif/mode-longitudinal"
     },
@@ -99,6 +100,10 @@
     {
       "packageName": "@ohif/mode-ultrasound-pleura-bline",
       "version": "3.0.0"
+    },
+    {
+      "packageName": "nova-desktop",
+      "version": "0.0.3"
     }
   ],
   "public": [

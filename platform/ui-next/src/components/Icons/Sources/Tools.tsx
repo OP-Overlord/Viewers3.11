@@ -801,6 +801,126 @@ export const ToolCobbAngle = (props: IconProps) => (
   </svg>
 );
 
+export const ToolICT = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="38px"
+    height="38px"
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="ICT tool icon"
+    {...props}
+  >
+    <line
+      x1="16"
+      y1="42"
+      x2="48"
+      y2="42"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+    <line
+      x1="16"
+      y1="38"
+      x2="16"
+      y2="46"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+    <line
+      x1="48"
+      y1="38"
+      x2="48"
+      y2="46"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="24"
+      y1="30"
+      x2="40"
+      y2="30"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+    <line
+      x1="24"
+      y1="27"
+      x2="24"
+      y2="33"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+    <line
+      x1="40"
+      y1="27"
+      x2="40"
+      y2="33"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="32"
+      y1="14"
+      x2="32"
+      y2="54"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-dasharray="4 4"
+      opacity="0.85"
+    />
+  </svg>
+);
+
+export const ToolKiteAngle = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28px"
+    height="28px"
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="Kite angle icon dashed arc spaced"
+  >
+    <line
+      x1="26"
+      y1="10"
+      x2="26"
+      y2="54"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="36"
+      y1="10"
+      x2="48"
+      y2="54"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
+
+    <path
+      d="M14 24
+           A30 30 0 0 0 52 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-dasharray="2 5"
+      stroke-linecap="round"
+    />
+  </svg>
+);
+
 export const ToolCreateThreshold = (props: IconProps) => (
   <svg
     width="25px"
@@ -2980,6 +3100,45 @@ export const ToolUltrasoundBidirectional = (props: IconProps) => (
         ></path>
       </g>
     </g>
+  </svg>
+);
+
+export const ToolCaptureNOVA = (props: IconProps) => (
+  <svg
+    width="28px"
+    height="28px"
+    viewBox="0 -960 960 960"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M360-400h400L622-580l-92 120-62-80-108 140Zm-40 160q-33 0-56.5-23.5T240-320v-480q0-33 23.5-56.5T320-880h480q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H320Zm0-80h480v-480H320v480ZM160-80q-33 0-56.5-23.5T80-160v-560h80v560h560v80H160Zm160-720v480-480Z" />
+  </svg>
+);
+
+export const ToolCineNOVA = (props: IconProps) => (
+  <svg
+    width="28px"
+    height="28px"
+    viewBox="0 -960 960 960"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="m480-420 240-160-240-160v320Zm28 220h224q-7 26-24 42t-44 20L228-85q-33 5-59.5-15.5T138-154L85-591q-4-33 16-59t53-30l46-6v80l-36 5 54 437 290-36Zm-148-80q-33 0-56.5-23.5T280-360v-440q0-33 23.5-56.5T360-880h440q33 0 56.5 23.5T880-800v440q0 33-23.5 56.5T800-280H360Zm0-80h440v-440H360v440Zm220-220ZM218-164Z" />
+  </svg>
+);
+
+export const ToolWindowLevelNOVA = (props: IconProps) => (
+  <svg
+    width="28px"
+    height="28px"
+    viewBox="0 -960 960 960"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="#1f1f1f"
+    {...props}
+  >
+    <path d="M400-40v-80H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h200v-80h80v880h-80ZM200-240h200v-240L200-240Zm360 120v-80h200q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H560Z" />
   </svg>
 );
 

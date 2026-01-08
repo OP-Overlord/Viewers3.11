@@ -1,12 +1,12 @@
-import i18n from 'i18next';
-import { id } from './id';
-import initToolGroups from './initToolGroups';
+import { hotkeys } from '@ohif/core';
 import toolbarButtons from './toolbarButtons';
+import initToolGroups from './initToolGroups';
+import { id } from './id';
+import './nova-theme.css';
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
 // Also, SM is not a simple imaging modalities, so exclude it.
 const NON_IMAGE_MODALITIES = ['ECG', 'SEG', 'RTSTRUCT', 'RTPLAN', 'PR'];
-
 const ohif = {
   layout: '@ohif/extension-default.layoutTemplateModule.viewerLayout',
   sopClassHandler: '@ohif/extension-default.sopClassHandlerModule.stack',
@@ -15,18 +15,16 @@ const ohif = {
   wsiSopClassHandler:
     '@ohif/extension-cornerstone.sopClassHandlerModule.DicomMicroscopySopClassHandler',
 };
-
 const cornerstone = {
   measurements: '@ohif/extension-cornerstone.panelModule.panelMeasurement',
   segmentation: '@ohif/extension-cornerstone.panelModule.panelSegmentation',
+  viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
-
 const tracked = {
   measurements: '@ohif/extension-measurement-tracking.panelModule.trackedMeasurements',
   thumbnailList: '@ohif/extension-measurement-tracking.panelModule.seriesList',
   viewport: '@ohif/extension-measurement-tracking.viewportModule.cornerstone-tracked',
 };
-
 const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
   sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
@@ -58,8 +56,11 @@ const dicomRT = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-rt.sopClassHandlerModule.dicom-rt',
 };
 
+/**
+ * Just two dependencies to be able to render a viewport with panels in order
+ * to make sure that the mode is working.
+ */
 const extensionDependencies = {
-  // Can derive the versions at least process.env.from npm_package_version
   '@ohif/extension-default': '^3.0.0',
   '@ohif/extension-cornerstone': '^3.0.0',
   '@ohif/extension-measurement-tracking': '^3.0.0',
@@ -69,31 +70,55 @@ const extensionDependencies = {
   '@ohif/extension-cornerstone-dicom-rt': '^3.0.0',
   '@ohif/extension-dicom-pdf': '^3.0.1',
   '@ohif/extension-dicom-video': '^3.0.1',
+  'nova-measures': '^1.0.0',
 };
 
 function modeFactory({ modeConfiguration }) {
   let _activatePanelTriggersSubscriptions = [];
   return {
-    // TODO: We're using this as a route segment
-    // We should not be.
-    id,
-    routeName: 'viewer',
-    displayName: i18n.t('Modes:Basic Viewer'),
     /**
-     * Lifecycle hooks
+     * Mode ID, which should be unique among modes used by the viewer. This ID
+     * is used to identify the mode in the viewer's state.
      */
-    onModeEnter: function ({ servicesManager, extensionManager, commandsManager }: withAppTypes) {
+    id,
+    routeName: 'desktop',
+    /**
+     * Mode name, which is displayed in the viewer's UI in the workList, for the
+     * user to select the mode.
+     */
+    displayName: 'NOVA Desktop',
+
+    /*getCustomizationModule() {
+      return [
+        { name: 'ui.themeClass', value: 'theme-nova' }, // clase raíz que podremos estilizar
+      ];
+    },*/
+
+    /**
+     * Runs when the Mode Route is mounted to the DOM. Usually used to initialize
+     * Services and other resources.
+     */
+    onModeEnter: ({ servicesManager, extensionManager, commandsManager }: withAppTypes) => {
       const { measurementService, toolbarService, toolGroupService, customizationService } =
         servicesManager.services;
+
+      // 👉 Forzar clase del tema en el root
+      const root = document.getElementById('root');
+      if (root && !root.classList.contains('theme-nova')) {
+        root.classList.add('theme-nova');
+      }
 
       measurementService.clearMeasurements();
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
 
-      toolbarService.register(toolbarButtons);
-      toolbarService.updateSection(toolbarService.sections.primary, [
+      toolbarService.register([...toolbarButtons]);
+      toolbarService.updateSection('primary', [
         'MeasurementTools',
+        'SpecialMeasures',
+        'Length',
+        'Cine',
         'Zoom',
         'Pan',
         'TrackballRotate',
@@ -101,6 +126,7 @@ function modeFactory({ modeConfiguration }) {
         'Capture',
         'Layout',
         'Crosshairs',
+        'ImageSliceSync',
         'MoreTools',
       ]);
 
@@ -132,9 +158,7 @@ function modeFactory({ modeConfiguration }) {
       ]);
 
       toolbarService.updateSection('MeasurementTools', [
-        'Length',
         'Angle',
-        'CobbAngle',
         'Bidirectional',
         'ArrowAnnotate',
         'EllipticalROI',
@@ -149,13 +173,11 @@ function modeFactory({ modeConfiguration }) {
         'Reset',
         'rotate-right',
         'flipHorizontal',
-        'ImageSliceSync',
         'ReferenceLines',
         'ImageOverlayViewer',
         'StackScroll',
         'invert',
         'Probe',
-        'Cine',
         'Magnify',
         'CalibrationLine',
         'TagBrowser',
@@ -163,43 +185,125 @@ function modeFactory({ modeConfiguration }) {
         'UltrasoundDirectionalTool',
         'WindowLevelRegion',
       ]);
-
       customizationService.setCustomizations({
         'panelSegmentation.disableEditing': {
           $set: true,
         },
       });
+      // si está en DX/CR/RX, mostramos el grupo; si no, lo vaciamos (queda oculto)
+      toolbarService.updateSection('SpecialMeasures', [
+        'CobbAngle',
+        'CardioThoracicIndex',
+        'KiteAngle',
+        'HilgenreinerAngle',
+      ]);
 
-      // // ActivatePanel event trigger for when a segmentation or measurement is added.
-      // // Do not force activation so as to respect the state the user may have left the UI in.
-      // _activatePanelTriggersSubscriptions = [
-      //   ...panelService.addActivatePanelTriggers(
-      //     cornerstone.segmentation,
-      //     [
-      //       {
-      //         sourcePubSubService: segmentationService,
-      //         sourceEvents: [segmentationService.EVENTS.SEGMENTATION_ADDED],
-      //       },
-      //     ],
-      //     true
-      //   ),
-      //   ...panelService.addActivatePanelTriggers(
-      //     tracked.measurements,
-      //     [
-      //       {
-      //         sourcePubSubService: measurementService,
-      //         sourceEvents: [
-      //           measurementService.EVENTS.MEASUREMENT_ADDED,
-      //           measurementService.EVENTS.RAW_MEASUREMENT_ADDED,
-      //         ],
-      //       },
-      //     ],
-      //     true
-      //   ),
-      //   true,
-      // ];
+      // ==========================
+      //  HOVER PARA PANEL IZQUIERDO usando el botón existente (simple por ciclos)
+      // ==========================
+      const setupHoverLeftPanel = () => {
+        const root = document.getElementById('root');
+        if (!root) {
+          console.warn('[NOVA] root no encontrado');
+          return;
+        }
+
+        // Evitar crear dos veces la zona
+        if (document.getElementById('nova-hover-left-panel-zone')) {
+          return;
+        }
+
+        // ⬅️ AJUSTA ESTE SELECTOR AL CONTENEDOR REAL DEL PANEL IZQUIERDO
+        const PANEL_SELECTOR = '[data-cy="left-panel"]';
+        // Botón del header que ya probaste manualmente
+        const BUTTON_SELECTOR = '[data-cy="side-panel-header-left"]';
+
+        const getPanel = () => document.querySelector(PANEL_SELECTOR) as HTMLElement | null;
+
+        const getButton = () => document.querySelector(BUTTON_SELECTOR) as HTMLElement | null;
+
+        // Crear zona caliente pegada al borde izquierdo
+        const hoverZone = document.createElement('div');
+        hoverZone.id = 'nova-hover-left-panel-zone';
+        Object.assign(hoverZone.style, {
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          bottom: '0',
+          width: '150px', // puedes ajustar
+          zIndex: '9999',
+          background: 'transparent',
+        });
+
+        // Flag para no iniciar dos ciclos a la vez
+        let cycleActive = false;
+
+        hoverZone.addEventListener('mouseenter', () => {
+          const btn = getButton();
+          if (!btn) {
+            console.warn('[NOVA] Botón panel izquierdo no encontrado en hover');
+            return;
+          }
+
+          // ya hay un ciclo abierto → no hacer nada
+          if (cycleActive) {
+            return;
+          }
+
+          cycleActive = true;
+
+          console.debug('[NOVA] hover borde izquierdo → abrir panel (click botón)');
+          btn.click(); // abrir panel
+
+          // Tras un pequeño delay, medimos el panel y enganchamos pointermove
+          setTimeout(() => {
+            const panel = getPanel();
+            let thresholdX = 350; // valor por defecto si no encontramos el panel
+
+            if (panel) {
+              const rect = panel.getBoundingClientRect();
+              // umbral un poco más allá del borde derecho del panel
+              thresholdX = rect.right + 20;
+              console.debug('[NOVA] thresholdX calculado:', thresholdX, 'rect:', rect);
+            } else {
+              console.warn('[NOVA] panel no encontrado al calcular threshold, usando 350');
+            }
+
+            const onPointerMove = (evt: PointerEvent) => {
+              // cuando el mouse se aleje más allá del umbral → cerrar
+              if (evt.clientX > thresholdX) {
+                const btnInner = getButton();
+                if (btnInner) {
+                  console.debug('[NOVA] pointer fuera de área → cerrar panel (click botón)');
+                  btnInner.click();
+                }
+                window.removeEventListener('pointermove', onPointerMove, true);
+                cycleActive = false;
+              }
+            };
+
+            window.addEventListener('pointermove', onPointerMove, { capture: true });
+
+            // Registrar cleanup para onModeExit
+            _activatePanelTriggersSubscriptions.push({
+              unsubscribe: () => {
+                window.removeEventListener('pointermove', onPointerMove, true);
+                cycleActive = false;
+              },
+            });
+          }, 150); // pequeño delay para que el layout actualice el panel
+        });
+
+        root.appendChild(hoverZone);
+      };
+
+      // Darle un pequeño margen para que se monte el layout
+      setTimeout(setupHoverLeftPanel, 500);
     },
     onModeExit: ({ servicesManager }: withAppTypes) => {
+      const root = document.getElementById('root');
+      root?.classList.remove('theme-nova');
+
       const {
         toolGroupService,
         syncGroupService,
@@ -219,12 +323,16 @@ function modeFactory({ modeConfiguration }) {
       segmentationService.destroy();
       cornerstoneViewportService.destroy();
     },
+    /** */
     validationTags: {
       study: [],
       series: [],
     },
-
-    isValidMode: function ({ modalities }) {
+    /**
+     * A boolean return value that indicates whether the mode is valid for the
+     * modalities of the selected studies. For instance a PET/CT mode should be
+     */
+    isValidMode: ({ modalities }) => {
       const modalities_list = modalities.split('\\');
 
       // Exclude non-image modalities
@@ -235,18 +343,29 @@ function modeFactory({ modeConfiguration }) {
           'The mode does not support studies that ONLY include the following modalities: SM, ECG, SEG, RTSTRUCT',
       };
     },
+    /**
+     * Mode Routes are used to define the mode's behavior. A list of Mode Route
+     * that includes the mode's path and the layout to be used. The layout will
+     * include the components that are used in the layout. For instance, if the
+     * default layoutTemplate is used (id: '@ohif/extension-default.layoutTemplateModule.viewerLayout')
+     * it will include the leftPanels, rightPanels, and viewports. However, if
+     * you define another layoutTemplate that includes a Footer for instance,
+     * you should provide the Footer component here too. Note: We use Strings
+     * to reference the component's ID as they are registered in the internal
+     * ExtensionManager. The template for the string is:
+     * `${extensionId}.{moduleType}.${componentId}`.
+     */
     routes: [
       {
-        path: 'longitudinal',
-        /*init: ({ servicesManager, extensionManager }) => {
-          //defaultViewerRouteInit
-        },*/
-        layoutTemplate: () => {
+        path: 'desktop',
+        layoutTemplate: ({ location, servicesManager }) => {
           return {
             id: ohif.layout,
             props: {
               leftPanels: [tracked.thumbnailList],
               leftPanelResizable: true,
+              leftPanelClosed: true,
+
               rightPanels: [cornerstone.segmentation, tracked.measurements],
               rightPanelClosed: true,
               rightPanelResizable: true,
@@ -286,14 +405,11 @@ function modeFactory({ modeConfiguration }) {
         },
       },
     ],
+    /** List of extensions that are used by the mode */
     extensions: extensionDependencies,
-    // Default protocol gets self-registered by default in the init
-    //hangingProtocol: ['@ohif/hpMammo', '@ohif/mnGrid', 'default'],
+    /** HangingProtocol used by the mode */
     hangingProtocol: ['@ohif/mnGrid', 'default'],
-    // Order is important in sop class handlers when two handlers both use
-    // the same sop class under different situations.  In that case, the more
-    // general handler needs to come last.  For this case, the dicomvideo must
-    // come first to remove video transfer syntax before ohif uses images
+    /** SopClassHandlers used by the mode */
     sopClassHandlers: [
       dicomvideo.sopClassHandler,
       dicomSeg.sopClassHandler,
@@ -306,6 +422,7 @@ function modeFactory({ modeConfiguration }) {
       dicomRT.sopClassHandler,
     ],
     ...modeConfiguration,
+    /** hotkeys for mode */
   };
 }
 
