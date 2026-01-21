@@ -230,7 +230,7 @@ function modeFactory({ modeConfiguration }) {
           top: '0',
           left: '0',
           bottom: '0',
-          width: '150px', // puedes ajustar
+          width: '50px', // puedes ajustar
           zIndex: '9999',
           background: 'transparent',
         });

@@ -5,23 +5,36 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded text-base font-normal leading-tight transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium leading-tight ring-offset-background transition-all duration-200 ease-medical focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary/60 text-primary-foreground hover:bg-primary/100',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        default:
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover hover:shadow-md hover:shadow-primary/20 active:scale-[0.98]',
+        destructive:
+          'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md hover:shadow-destructive/20 active:scale-[0.98]',
         outline:
-          'border border-primary/25 bg-background hover:bg-primary/25 text-primary hover:text-primary',
-        secondary: 'bg-primary/40 text-secondary-foreground hover:bg-primary/60',
-        ghost: 'font-normal text-primary hover:bg-primary/25',
-        link: 'font-normal text-primary underline-offset-4 hover:underline',
+          'border-2 border-border bg-background/50 text-foreground backdrop-blur-sm hover:border-primary hover:bg-primary/10 hover:text-primary active:scale-[0.98]',
+        secondary:
+          'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary-hover hover:shadow-md hover:shadow-secondary/20 active:scale-[0.98]',
+        ghost:
+          'text-foreground hover:bg-accent hover:text-accent-foreground active:scale-[0.98]',
+        link: 'text-primary underline-offset-4 hover:underline',
+        success:
+          'bg-success text-success-foreground shadow-sm hover:bg-success/90 hover:shadow-md hover:shadow-success/20 active:scale-[0.98]',
+        warning:
+          'bg-warning text-warning-foreground shadow-sm hover:bg-warning/90 hover:shadow-md hover:shadow-warning/20 active:scale-[0.98]',
+        premium:
+          'button-premium bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98]',
       },
       size: {
-        default: 'h-7 px-2 py-2',
-        sm: 'h-6 rounded px-2',
-        lg: 'h-9 rounded px-2',
-        icon: 'h-6 w-6',
+        default: 'h-9 px-4 py-2',
+        sm: 'h-8 rounded-md px-3 text-xs',
+        lg: 'h-11 rounded-md px-6 text-base',
+        xl: 'h-14 rounded-lg px-8 text-lg',
+        icon: 'h-9 w-9',
+        'icon-sm': 'h-8 w-8',
+        'icon-lg': 'h-11 w-11',
       },
     },
     defaultVariants: {

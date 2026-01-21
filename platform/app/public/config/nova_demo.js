@@ -1,6 +1,5 @@
 /** @type {AppTypes.Config} */
 window.config = {
-
   customizationService: [
     {
       'commandsModule.commands': {
@@ -18,14 +17,14 @@ window.config = {
               viewportGridService.setState({ viewports: [...viewports] });
             },
           },
-        ]
-      }
+        ],
+      },
     },
     {
       // Desactiva los tours
       'ohif.tours': {
-        $set: []
-      }
+        $set: [],
+      },
     },
     {
       // Superposición en la parte superior izquierda
@@ -38,8 +37,9 @@ window.config = {
             title: 'Descripción del estudio',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.StudyDescription;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.StudyDescription;
             },
             contentF: ({ instance }) => instance.StudyDescription,
           },
@@ -50,8 +50,9 @@ window.config = {
             title: 'Nombre de la serie',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.SeriesDescription;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.SeriesDescription;
             },
             contentF: ({ instance }) => instance.SeriesDescription,
           },
@@ -62,11 +63,11 @@ window.config = {
             title: 'Fecha del estudio',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.StudyDate;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.StudyDate;
             },
-            contentF: ({ instance, formatters: { formatDate } }) =>
-              formatDate(instance.StudyDate),
+            contentF: ({ instance, formatters: { formatDate } }) => formatDate(instance.StudyDate),
           },
           {
             id: 'StudyTimeOverlay',
@@ -75,14 +76,14 @@ window.config = {
             title: 'Hora de adquisición',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.StudyTime;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.StudyTime;
             },
-            contentF: ({ instance, formatters: { formatTime } }) =>
-              formatTime(instance.StudyTime),
+            contentF: ({ instance, formatters: { formatTime } }) => formatTime(instance.StudyTime),
           },
-        ]
-      }
+        ],
+      },
     },
     {
       // Superposición en la parte superior derecha
@@ -95,8 +96,9 @@ window.config = {
             title: 'Nombre del paciente',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.PatientName?.Alphabetic;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.PatientName?.Alphabetic;
             },
             contentF: ({ instance, formatters: { formatPN } }) =>
               formatPN(instance.PatientName.Alphabetic),
@@ -108,8 +110,9 @@ window.config = {
             title: 'Identificación del paciente',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.PatientID;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.PatientID;
             },
             contentF: ({ instance }) => instance.PatientID,
           },
@@ -120,8 +123,9 @@ window.config = {
             title: 'Edad del paciente',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
-              const visible = servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return (visible !== false) && instance?.PatientAge;
+              const visible =
+                servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
+              return visible !== false && instance?.PatientAge;
             },
             contentF: ({ instance }) => {
               const rawAge = instance.PatientAge;
@@ -131,14 +135,14 @@ window.config = {
                 Y: 'años',
                 M: 'meses',
                 W: 'semanas',
-                D: 'días'
+                D: 'días',
               };
               return `${value} ${unitMap[unit] || ''}`;
             },
           },
-        ]
-      }
-    }
+        ],
+      },
+    },
   ],
 
   routerBasename: '/v3',
@@ -191,7 +195,11 @@ window.config = {
         staticWado: true,
         singlepart: 'pdf,video,bulkdata',
         dicomUploadEnabled: true,
-        acceptHeader: ['multipart/related; type=application/pdf; q=0.6','multipart/related; type=image/jls; q=1','multipart/related; type=application/octet-stream; q=0.5'],
+        acceptHeader: [
+          'multipart/related; type=application/pdf; q=0.6',
+          'multipart/related; type=image/jls; q=1',
+          'multipart/related; type=application/octet-stream; q=0.5',
+        ],
         omitQuotationForMultipartRequest: false,
       },
     },
@@ -207,12 +215,11 @@ window.config = {
           className: 'text-purple-600 line-through',
           href: 'https://novaimaging.co/',
         },
-        React.createElement('img',
-          {
-            src: './nova-dark.svg',
-            className: 'w-20 h-10',
-          }
-        ))
+        React.createElement('img', {
+          src: './nova-dark.svg',
+          className: 'w-28 h-14',
+        })
+      );
     },
   },
   hotkeys: [

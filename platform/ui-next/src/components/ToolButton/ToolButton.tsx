@@ -5,7 +5,7 @@ import { Button } from '../Button';
 import { cn } from '../../lib/utils';
 import { useIconPresentation } from '../../contextProviders/IconPresentationProvider';
 
-const baseClasses = '!rounded-lg inline-flex items-center justify-center';
+const baseClasses = '!rounded-lg inline-flex flex-col items-center justify-center';
 const defaultClasses = 'bg-transparent text-foreground/80 hover:bg-background hover:text-highlight';
 const activeClasses = 'bg-highlight text-background hover:!bg-highlight/80';
 const disabledClasses =
@@ -99,12 +99,19 @@ function ToolButton(props: ToolButtonProps) {
             disabled={disabled}
             name={id}
           >
-            {children || (
-              <Icons.ByName
-                name={icon}
-                className={iconClassName || iconSizeClass}
-              />
-            )}
+            <div className="flex flex-col items-center justify-center gap-0.5">
+              {children || (
+                <Icons.ByName
+                  name={icon}
+                  className={iconClassName || iconSizeClass}
+                />
+              )}
+              {label && (
+                <span className="text-[9px] font-medium leading-tight text-current whitespace-nowrap">
+                  {label}
+                </span>
+              )}
+            </div>
           </Button>
         </span>
       </TooltipTrigger>

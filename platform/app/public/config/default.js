@@ -309,7 +309,7 @@ window.config = {
         },
         React.createElement('img', {
           src: './nova-dark.svg',
-          className: 'w-20 h-10',
+          className: 'w-28 h-14',
         })
       );
     },

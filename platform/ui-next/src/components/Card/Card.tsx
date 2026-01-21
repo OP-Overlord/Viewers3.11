@@ -7,7 +7,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        'bg-card text-card-foreground border-input rounded-lg border shadow',
+        'rounded-lg border border-border bg-card text-card-foreground shadow-md backdrop-blur-sm transition-all duration-300 hover:border-border-strong hover:shadow-lg',
         className
       )}
       {...props}
@@ -20,7 +20,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex flex-col space-y-1.5 p-6', className)}
+      className={cn('flex flex-col gap-2 border-b border-border/50 p-5', className)}
       {...props}
     />
   )
@@ -31,7 +31,10 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('font-semibold leading-none tracking-tight', className)}
+      className={cn(
+        'text-lg font-semibold leading-tight tracking-tight text-foreground',
+        className
+      )}
       {...props}
     />
   )
@@ -44,7 +47,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-muted-foreground text-base', className)}
+    className={cn('text-sm leading-relaxed text-foreground-muted', className)}
     {...props}
   />
 ));
@@ -54,7 +57,7 @@ const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('p-6 pt-0', className)}
+      className={cn('p-5', className)}
       {...props}
     />
   )
@@ -65,7 +68,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex items-center p-6 pt-0', className)}
+      className={cn('flex items-center gap-3 border-t border-border/50 p-5', className)}
       {...props}
     />
   )
