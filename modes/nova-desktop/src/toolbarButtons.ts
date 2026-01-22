@@ -128,7 +128,8 @@ const toolbarButtons: Button[] = [
     uiType: 'ohif.dataOverlayMenu',
     props: {
       icon: 'ViewportViews',
-      tooltip: 'Configurar opciones de superposición de datos y gestionar conjuntos de visualización',
+      tooltip:
+        'Configurar opciones de superposición de datos y gestionar conjuntos de visualización',
       evaluate: 'evaluate.dataOverlayMenu',
     },
   },
@@ -148,7 +149,6 @@ const toolbarButtons: Button[] = [
     uiType: 'ohif.windowLevelMenu',
     props: {
       icon: 'WindowLevel',
-      label: 'Contraste',
       tooltip: 'Ajustar preajustes de ventana/nivel y personalizar configuración de contraste',
       evaluate: 'evaluate.windowLevelMenu',
     },
@@ -560,6 +560,23 @@ const toolbarButtons: Button[] = [
       label: 'Ángulo Acetabular',
       tooltip: 'Ángulo Acetabular',
       commands: setToolActiveToolbar, // 👈 igual que el resto de herramientas
+      evaluate: [
+        'evaluate.cornerstoneTool',
+        {
+          name: 'evaluate.modality.supported',
+          supportedModalities: ['DX', 'CR', 'RX'],
+        },
+      ],
+    },
+  },
+  {
+    id: 'TonnisAngle',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'tool-kiteangle',
+      label: 'Ángulo de Tonnis',
+      tooltip: 'Ángulo de Tonnis (HTE)',
+      commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
         {

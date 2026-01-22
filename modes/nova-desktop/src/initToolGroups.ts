@@ -74,6 +74,7 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       { toolName: 'CardioThoracicIndex' },
       { toolName: 'KiteAngle' },
       { toolName: 'HilgenreinerAngle' },
+      { toolName: 'TonnisAngle' },
     ],
     // enabled
     enabled: [{ toolName: toolNames.ImageOverlayViewer }],

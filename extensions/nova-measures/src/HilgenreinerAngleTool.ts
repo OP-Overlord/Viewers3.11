@@ -70,6 +70,7 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
   } | null = null;
 
   private _currentCursorPosition: Types.Point2 | null = null;
+  private _textBoxDragOffset: Types.Point3 | null = null;
 
   constructor(toolProps = {}, defaultToolProps = {}) {
     super(toolProps, {
@@ -275,6 +276,11 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
     const data = annotation.data as HilgenreinerData;
     const { viewport } = getEnabledElement(element);
     annotation.highlighted = true;
+
+    // Si estamos creando una nueva anotación, ignorar selección de handles para evitar conflictos
+    if (this.editData?.newAnnotation && this.editData.annotation === annotation) {
+      return;
+    }
 
     // Verificar área de texto
     if (data.handles.textBox && data.handles.textBox.worldPosition) {
@@ -625,6 +631,7 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
       this._deactivateDraw(element);
       this._triggerRender(element);
       this.editData = null;
+      this._textBoxDragOffset = null;
     }
     evt.preventDefault();
   };
@@ -674,7 +681,24 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
 
     if (movingTextBox) {
       if (isDragging) this.editData.hasDragged = true;
-      data.handles.textBox.worldPosition = [...worldPos] as Types.Point3;
+
+      // Calcular offset inicial si no existe
+      if (!this._textBoxDragOffset) {
+        const currentTextPos = data.handles.textBox.worldPosition;
+        this._textBoxDragOffset = [
+          currentTextPos[0] - worldPos[0],
+          currentTextPos[1] - worldPos[1],
+          currentTextPos[2] - worldPos[2],
+        ] as Types.Point3;
+      }
+
+      // Aplicar el offset para mantener la posición relativa del click
+      data.handles.textBox.worldPosition = [
+        worldPos[0] + this._textBoxDragOffset[0],
+        worldPos[1] + this._textBoxDragOffset[1],
+        worldPos[2] + this._textBoxDragOffset[2],
+      ] as Types.Point3;
+
       data.handles.textBox.hasMoved = true;
       this._triggerRender(element);
       evt.preventDefault();
@@ -993,18 +1017,82 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
         lineDash: [5, 5],
       });
 
-      // ===== PUNTOS DE INTERSECCIÓN =====
+      // ===== PUNTOS DE INTERSECCIÓN Y ARCOS =====
       const { leftAngle, rightAngle, leftIntersection, rightIntersection } = d.cachedStats || {};
+      const svgns = 'http://www.w3.org/2000/svg';
+      const arcRadius = 60; // Radio del arco en píxeles
 
-      if (leftIntersection) {
+      // Arco izquierdo - entre línea de Hilgenreiner y línea acetabular izquierda
+      if (leftIntersection && leftAngle !== undefined && leftAngle > 0) {
         const canvasLeftInt = viewport.worldToCanvas(leftIntersection);
         drawHandles(svgDrawingHelper, annotationUID!, 'handle-left-intersection', [canvasLeftInt], {
           color: 'white',
           handleRadius: 4,
         });
+
+        // Usar las direcciones de las líneas desde el punto de intersección
+        // Dirección de Hilgenreiner (usar ambos lados para determinar la dirección correcta)
+        const dirH1 = [canvasH1[0] - canvasLeftInt[0], canvasH1[1] - canvasLeftInt[1]];
+        const dirH2 = [canvasH2[0] - canvasLeftInt[0], canvasH2[1] - canvasLeftInt[1]];
+
+        // Dirección de la línea acetabular izquierda
+        const dirL1 = [canvasL1[0] - canvasLeftInt[0], canvasL1[1] - canvasLeftInt[1]];
+        const dirL2 = [canvasL2[0] - canvasLeftInt[0], canvasL2[1] - canvasLeftInt[1]];
+
+        // Usar el lado de la línea de Hilgenreiner más cercano a la línea acetabular
+        const angleH1 = Math.atan2(dirH1[1], dirH1[0]);
+        const angleH2 = Math.atan2(dirH2[1], dirH2[0]);
+        const angleL1 = Math.atan2(dirL1[1], dirL1[0]);
+        const angleL2 = Math.atan2(dirL2[1], dirL2[0]);
+
+        // Seleccionar el punto de la línea acetabular que está "abajo" (mayor Y en canvas = abajo)
+        const canvasLRef = canvasL2[1] > canvasL1[1] ? canvasL2 : canvasL1;
+        const angleLRef = Math.atan2(
+          canvasLRef[1] - canvasLeftInt[1],
+          canvasLRef[0] - canvasLeftInt[0]
+        );
+
+        // Seleccionar el lado de Hilgenreiner que forma el ángulo más pequeño con la línea acetabular
+        const diffH1 = Math.abs(angleLRef - angleH1);
+        const diffH2 = Math.abs(angleLRef - angleH2);
+        const normalizedDiffH1 = diffH1 > Math.PI ? 2 * Math.PI - diffH1 : diffH1;
+        const normalizedDiffH2 = diffH2 > Math.PI ? 2 * Math.PI - diffH2 : diffH2;
+        const angleHRef = normalizedDiffH1 < normalizedDiffH2 ? angleH1 : angleH2;
+
+        // Crear el arco
+        const startX = canvasLeftInt[0] + arcRadius * Math.cos(angleHRef);
+        const startY = canvasLeftInt[1] + arcRadius * Math.sin(angleHRef);
+        const endX = canvasLeftInt[0] + arcRadius * Math.cos(angleLRef);
+        const endY = canvasLeftInt[1] + arcRadius * Math.sin(angleLRef);
+
+        // Calcular la diferencia angular normalizada
+        let angleDiff = angleLRef - angleHRef;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+
+        const sweepFlag = angleDiff > 0 ? 1 : 0;
+        const largeArcFlag = Math.abs(angleDiff) > Math.PI ? 1 : 0;
+
+        const arcPath = `M ${startX} ${startY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
+
+        if (svgLayer) {
+          svgLayer
+            .querySelectorAll(`[data-annotation-uid="${annotationUID}"][data-arc-left]`)
+            .forEach((el: Element) => el.remove());
+        }
+
+        const arcElement = document.createElementNS(svgns, 'path');
+        arcElement.setAttribute('d', arcPath);
+        arcElement.setAttribute('stroke', 'cyan');
+        arcElement.setAttribute('stroke-width', '1.5');
+        arcElement.setAttribute('fill', 'none');
+        arcElement.setAttribute('data-annotation-uid', annotationUID!);
+        arcElement.setAttribute('data-arc-left', 'true');
+        svgLayer?.appendChild(arcElement);
       }
 
-      if (rightIntersection) {
+      // Arco derecho - entre línea de Hilgenreiner y línea acetabular derecha
+      if (rightIntersection && rightAngle !== undefined && rightAngle > 0) {
         const canvasRightInt = viewport.worldToCanvas(rightIntersection);
         drawHandles(
           svgDrawingHelper,
@@ -1016,6 +1104,58 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
             handleRadius: 4,
           }
         );
+
+        // Direcciones desde el punto de intersección
+        const dirH1 = [canvasH1[0] - canvasRightInt[0], canvasH1[1] - canvasRightInt[1]];
+        const dirH2 = [canvasH2[0] - canvasRightInt[0], canvasH2[1] - canvasRightInt[1]];
+        const dirR1 = [canvasR1[0] - canvasRightInt[0], canvasR1[1] - canvasRightInt[1]];
+        const dirR2 = [canvasR2[0] - canvasRightInt[0], canvasR2[1] - canvasRightInt[1]];
+
+        const angleH1 = Math.atan2(dirH1[1], dirH1[0]);
+        const angleH2 = Math.atan2(dirH2[1], dirH2[0]);
+
+        // Seleccionar el punto de la línea acetabular que está "abajo"
+        const canvasRRef = canvasR2[1] > canvasR1[1] ? canvasR2 : canvasR1;
+        const angleRRef = Math.atan2(
+          canvasRRef[1] - canvasRightInt[1],
+          canvasRRef[0] - canvasRightInt[0]
+        );
+
+        // Seleccionar el lado de Hilgenreiner que forma el ángulo más pequeño
+        const diffH1 = Math.abs(angleRRef - angleH1);
+        const diffH2 = Math.abs(angleRRef - angleH2);
+        const normalizedDiffH1 = diffH1 > Math.PI ? 2 * Math.PI - diffH1 : diffH1;
+        const normalizedDiffH2 = diffH2 > Math.PI ? 2 * Math.PI - diffH2 : diffH2;
+        const angleHRef = normalizedDiffH1 < normalizedDiffH2 ? angleH1 : angleH2;
+
+        const startX = canvasRightInt[0] + arcRadius * Math.cos(angleHRef);
+        const startY = canvasRightInt[1] + arcRadius * Math.sin(angleHRef);
+        const endX = canvasRightInt[0] + arcRadius * Math.cos(angleRRef);
+        const endY = canvasRightInt[1] + arcRadius * Math.sin(angleRRef);
+
+        let angleDiff = angleRRef - angleHRef;
+        while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+        while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+
+        const sweepFlag = angleDiff > 0 ? 1 : 0;
+        const largeArcFlag = Math.abs(angleDiff) > Math.PI ? 1 : 0;
+
+        const arcPath = `M ${startX} ${startY} A ${arcRadius} ${arcRadius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
+
+        if (svgLayer) {
+          svgLayer
+            .querySelectorAll(`[data-annotation-uid="${annotationUID}"][data-arc-right]`)
+            .forEach((el: Element) => el.remove());
+        }
+
+        const arcElement = document.createElementNS(svgns, 'path');
+        arcElement.setAttribute('d', arcPath);
+        arcElement.setAttribute('stroke', '#FF00FF');
+        arcElement.setAttribute('stroke-width', '1.5');
+        arcElement.setAttribute('fill', 'none');
+        arcElement.setAttribute('data-annotation-uid', annotationUID!);
+        arcElement.setAttribute('data-arc-right', 'true');
+        svgLayer?.appendChild(arcElement);
       }
 
       // ===== TEXTO =====
@@ -1035,7 +1175,7 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
         hilgenreinerLabel.setAttribute('x', String(hilgenreinerMidCanvas[0]));
         hilgenreinerLabel.setAttribute('y', String(hilgenreinerMidCanvas[1]));
         hilgenreinerLabel.setAttribute('fill', 'yellow');
-        hilgenreinerLabel.setAttribute('font-size', '11px');
+        hilgenreinerLabel.setAttribute('font-size', '13px');
         hilgenreinerLabel.setAttribute(
           'font-family',
           'Helvetica Neue, Helvetica, Arial, sans-serif'
@@ -1051,21 +1191,37 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
         svgLayer?.appendChild(hilgenreinerLabel);
 
         // Texto de resumen con los ángulos
+        // Determinar automáticamente cuál es izquierda y derecha basándose en la posición X
         if (d.handles.textBox?.worldPosition) {
           const textCanvas = viewport.worldToCanvas(d.handles.textBox.worldPosition);
 
+          // Obtener posición X de las intersecciones para determinar izq/der
+          let actualLeftAngle = leftAngle;
+          let actualRightAngle = rightAngle;
+
+          if (leftIntersection && rightIntersection) {
+            const canvasLeftInt = viewport.worldToCanvas(leftIntersection);
+            const canvasRightInt = viewport.worldToCanvas(rightIntersection);
+
+            // Si la "izquierda" está realmente a la derecha en la imagen, intercambiar
+            if (canvasLeftInt[0] > canvasRightInt[0]) {
+              actualLeftAngle = rightAngle;
+              actualRightAngle = leftAngle;
+            }
+          }
+
           const textLines = [
-            `Ángulo Acetabular Izq: ${leftAngle.toFixed(1)}°`,
-            `Ángulo Acetabular Der: ${rightAngle.toFixed(1)}°`,
+            `Ángulo Acetabular Izq: ${actualLeftAngle.toFixed(1)}°`,
+            `Ángulo Acetabular Der: ${actualRightAngle.toFixed(1)}°`,
           ];
-          const lineHeight = 14;
+          const lineHeight = 16;
 
           textLines.forEach((line, index) => {
             const textElement = document.createElementNS(svgns, 'text');
             textElement.setAttribute('x', String(textCanvas[0]));
             textElement.setAttribute('y', String(textCanvas[1] + index * lineHeight));
             textElement.setAttribute('fill', 'rgb(0, 255, 0)');
-            textElement.setAttribute('font-size', '12px');
+            textElement.setAttribute('font-size', '14px');
             textElement.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
             textElement.setAttribute('text-anchor', 'start');
             textElement.setAttribute('data-annotation-uid', annotationUID!);

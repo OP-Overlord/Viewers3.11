@@ -196,6 +196,7 @@ function modeFactory({ modeConfiguration }) {
         'CardioThoracicIndex',
         'KiteAngle',
         'HilgenreinerAngle',
+        'TonnisAngle',
       ]);
 
       // ==========================

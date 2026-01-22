@@ -67,6 +67,7 @@ export default class KiteAngleTool extends AnnotationTool {
   } | null = null;
 
   private _currentCursorPosition: Types.Point2 | null = null;
+  private _textBoxDragOffset: Types.Point3 | null = null;
 
   constructor(toolProps = {}, defaultToolProps = {}) {
     super(toolProps, {
@@ -243,6 +244,11 @@ export default class KiteAngleTool extends AnnotationTool {
     const data = annotation.data as KiteAngleData;
     const { viewport } = getEnabledElement(element);
     annotation.highlighted = true;
+
+    // Si estamos creando una nueva anotación, ignorar selección de handles para evitar conflictos
+    if (this.editData?.newAnnotation && this.editData.annotation === annotation) {
+      return;
+    }
 
     // Verificar área de texto
     if (data.handles.textBox && data.handles.textBox.worldPosition) {
@@ -482,6 +488,14 @@ export default class KiteAngleTool extends AnnotationTool {
       this._calculateStats(annotation);
     } else if (clickCount === 2) {
       // Cuarto click: fija punto 2 del segmento 2 y termina
+      // Validar que no sea el mismo punto que el start de este segmento (doble click accidental)
+      const dist = vec3.distance(data.handles.segment2[0], worldPos);
+      // Usar tolerancia razonable (e.g. 1e-3 en coord mundo)
+      if (dist < 1e-3) {
+        evt.preventDefault();
+        return;
+      }
+
       data.handles.segment2[1] = [...worldPos] as Types.Point3;
       annotation.invalidated = true;
       this._calculateStats(annotation);
@@ -546,6 +560,7 @@ export default class KiteAngleTool extends AnnotationTool {
       this._deactivateDraw(element);
       this._triggerRender(element);
       this.editData = null;
+      this._textBoxDragOffset = null;
     }
     evt.preventDefault();
   };
@@ -595,7 +610,24 @@ export default class KiteAngleTool extends AnnotationTool {
 
     if (movingTextBox) {
       if (isDragging) this.editData.hasDragged = true;
-      data.handles.textBox.worldPosition = [...worldPos] as Types.Point3;
+
+      // Calcular offset inicial si no existe
+      if (!this._textBoxDragOffset) {
+        const currentTextPos = data.handles.textBox.worldPosition;
+        this._textBoxDragOffset = [
+          currentTextPos[0] - worldPos[0],
+          currentTextPos[1] - worldPos[1],
+          currentTextPos[2] - worldPos[2],
+        ] as Types.Point3;
+      }
+
+      // Aplicar el offset para mantener la posición relativa del click
+      data.handles.textBox.worldPosition = [
+        worldPos[0] + this._textBoxDragOffset[0],
+        worldPos[1] + this._textBoxDragOffset[1],
+        worldPos[2] + this._textBoxDragOffset[2],
+      ] as Types.Point3;
+
       data.handles.textBox.hasMoved = true;
       this._triggerRender(element);
       evt.preventDefault();
@@ -883,7 +915,7 @@ export default class KiteAngleTool extends AnnotationTool {
         lineDash: [5, 5],
       });
 
-      // ===== PUNTO DE INTERSECCIÓN (si existe) =====
+      // ===== PUNTO DE INTERSECCIÓN Y ARCO (si existe) =====
       const { angle, intersection } = d.cachedStats || {};
       if (intersection) {
         const canvasIntersection = viewport.worldToCanvas(intersection);
@@ -891,6 +923,166 @@ export default class KiteAngleTool extends AnnotationTool {
           color: 'yellow',
           handleRadius: 4,
         });
+
+        // Dibujar arco para visualizar el ángulo
+        if (angle !== undefined && angle > 0) {
+          // --- DETERMINAR RADIO DEL ARCO ---
+          // "Cuando no se intercepten los dos segmentos... el arco debe estar ubicado antes de las proyecciones"
+          // "se calcula la distancia más larga entre los extremos mas cercanos de ambos segmentos... y agregamos 5 pixeles"
+
+          // 1. Verificar si los segmentos se interceptan físicamente en el canvas
+          let arcRadius = 60; // Default
+
+          // Distancias de los extremos de los segmentos al punto de intersección
+          const d1Start = vec3.distance(p1s1, intersection);
+          const d1End = vec3.distance(p2s1, intersection);
+          const d2Start = vec3.distance(p1s2, intersection);
+          const d2End = vec3.distance(p2s2, intersection);
+
+          const len1 = vec3.distance(p1s1, p2s1);
+          const len2 = vec3.distance(p1s2, p2s2);
+
+          // Si la distancia de intersección a cualquier extremo es mayor que la longitud del segmento (aproximadamente),
+          // significa que la intersección está fuera del segmento.
+          // Comprobamos con cierta tolerancia.
+          const isIntersectionOnSeg1 = Math.abs(d1Start + d1End - len1) < 0.1;
+          const isIntersectionOnSeg2 = Math.abs(d2Start + d2End - len2) < 0.1;
+
+          if (!isIntersectionOnSeg1 || !isIntersectionOnSeg2) {
+            // No se interceptan físicamente ambos
+            // Buscar extremos más cercanos de cada segmento
+            const minDist1 = Math.min(d1Start, d1End);
+            const minDist2 = Math.min(d2Start, d2End);
+
+            // Convertir distancias de mundo a píxeles (aprox, asumiendo scale uniforme o usando un punto de referencia)
+            // Mejor hacerlo en canvas space directamente para precisión en pixeles
+            const d1StartCanvas = Math.hypot(
+              canvasP1S1[0] - canvasIntersection[0],
+              canvasP1S1[1] - canvasIntersection[1]
+            );
+            const d1EndCanvas = Math.hypot(
+              canvasP2S1[0] - canvasIntersection[0],
+              canvasP2S1[1] - canvasIntersection[1]
+            );
+            const d2StartCanvas = Math.hypot(
+              canvasP1S2[0] - canvasIntersection[0],
+              canvasP1S2[1] - canvasIntersection[1]
+            );
+            const d2EndCanvas = Math.hypot(
+              canvasP2S2[0] - canvasIntersection[0],
+              canvasP2S2[1] - canvasIntersection[1]
+            );
+
+            const minCanvasDist1 = Math.min(d1StartCanvas, d1EndCanvas);
+            const minCanvasDist2 = Math.min(d2StartCanvas, d2EndCanvas);
+
+            // "distancia más larga entre los extremos mas cercanos"
+            const maxOfMins = Math.max(minCanvasDist1, minCanvasDist2);
+
+            arcRadius = maxOfMins + 5;
+          }
+
+          const svgns = 'http://www.w3.org/2000/svg';
+          const svgLayer = svgDrawingHelper.svgLayerElement;
+
+          // Calcular los ángulos de los segmentos respecto al eje X
+          const dir1X = canvasP2S1[0] - canvasP1S1[0];
+          const dir1Y = canvasP2S1[1] - canvasP1S1[1];
+          const dir2X = canvasP2S2[0] - canvasP1S2[0];
+          const dir2Y = canvasP2S2[1] - canvasP1S2[1];
+
+          // Ángulos en radianes
+          let angle1 = Math.atan2(dir1Y, dir1X);
+          let angle2 = Math.atan2(dir2Y, dir2X);
+
+          // Asegurar que el arco dibujado corresponda al ángulo agudo (< 90)
+          // Si el ángulo entre los vectores originales es obtuso, invertimos uno
+          const angleDiff = angle2 - angle1;
+          // Normalizar diferencia a [-PI, PI]
+          const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+          if (Math.abs(normalizedDiff) > Math.PI / 2) {
+            angle2 += Math.PI;
+          }
+
+          // Recalcular diferencia para el barrido
+          let startAngle = angle1;
+          let endAngle = angle2;
+
+          // Asegurar orden correcto para el sweep
+          if (endAngle < startAngle) {
+            [startAngle, endAngle] = [endAngle, startAngle];
+          }
+
+          // Si la diferencia es > PI, tomamos el camino corto cruzando el eje
+          if (endAngle - startAngle > Math.PI) {
+            [startAngle, endAngle] = [endAngle, startAngle + 2 * Math.PI];
+          }
+
+          // --- LOGICA DE ORIENTACIÓN DEL ARCO ---
+          // "El arco debe estar ubicado antes de las proyecciones"
+          // Verificamos si el arco actual "mira" hacia los segmentos reales o hacia el vacío.
+          // Calculamos el vector promedio hacia los puntos medios de los segmentos desde la intersección.
+
+          const mid1 = vec3.lerp(vec3.create(), p1s1, p2s1, 0.5);
+          const mid2 = vec3.lerp(vec3.create(), p1s2, p2s2, 0.5);
+
+          // Vectores desde intersección a los midpoints (usamos coordenadas de mundo o canvas? Canvas mejor para consistencia con ángulos)
+          // Pero cachedStats.intersection está en world.
+          // Usamos canvasIntersection.
+
+          const canvasMid1 = viewport.worldToCanvas(mid1);
+          const canvasMid2 = viewport.worldToCanvas(mid2);
+
+          const v1x = canvasMid1[0] - canvasIntersection[0];
+          const v1y = canvasMid1[1] - canvasIntersection[1];
+          const v2x = canvasMid2[0] - canvasIntersection[0];
+          const v2y = canvasMid2[1] - canvasIntersection[1];
+
+          const avgDirX = v1x + v2x;
+          const avgDirY = v1y + v2y;
+
+          // Angulo medio del arco actual
+          const midArcAngle = startAngle + (endAngle - startAngle) / 2;
+          const bisectorX = Math.cos(midArcAngle);
+          const bisectorY = Math.sin(midArcAngle);
+
+          // Producto punto para ver alineación
+          const dot = avgDirX * bisectorX + avgDirY * bisectorY;
+
+          // Si el producto punto es negativo, el arco está en el lado opuesto a los segmentos
+          if (dot < 0) {
+            startAngle += Math.PI;
+            endAngle += Math.PI;
+          }
+          // --------------------------------------
+
+          // Calcular puntos de inicio y fin del arco
+          const startX = canvasIntersection[0] + arcRadius * Math.cos(startAngle);
+          const startY = canvasIntersection[1] + arcRadius * Math.sin(startAngle);
+          const endX = canvasIntersection[0] + arcRadius * Math.cos(endAngle);
+          const endY = canvasIntersection[1] + arcRadius * Math.sin(endAngle);
+
+          // Crear el path del arco (siempre arc pequeño < 180)
+          const arcPath = `M ${startX} ${startY} A ${arcRadius} ${arcRadius} 0 0 1 ${endX} ${endY}`;
+
+          // Remover arco anterior si existe
+          if (svgLayer) {
+            svgLayer
+              .querySelectorAll(`[data-annotation-uid="${annotationUID}"][data-arc]`)
+              .forEach((el: Element) => el.remove());
+          }
+
+          // Crear elemento path para el arco
+          const arcElement = document.createElementNS(svgns, 'path');
+          arcElement.setAttribute('d', arcPath);
+          arcElement.setAttribute('stroke', 'yellow');
+          arcElement.setAttribute('stroke-width', '1.5');
+          arcElement.setAttribute('fill', 'none');
+          arcElement.setAttribute('data-annotation-uid', annotationUID!);
+          arcElement.setAttribute('data-arc', 'true');
+          svgLayer?.appendChild(arcElement);
+        }
       }
 
       // ===== TEXTO =====
@@ -915,7 +1107,7 @@ export default class KiteAngleTool extends AnnotationTool {
           textElement.setAttribute('x', String(textCanvas[0]));
           textElement.setAttribute('y', String(textCanvas[1] + index * lineHeight));
           textElement.setAttribute('fill', 'rgb(0, 255, 0)');
-          textElement.setAttribute('font-size', '12px');
+          textElement.setAttribute('font-size', '14px');
           textElement.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
           textElement.setAttribute('text-anchor', 'start');
           textElement.setAttribute('data-annotation-uid', annotationUID!);
