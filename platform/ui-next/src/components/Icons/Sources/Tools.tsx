@@ -817,7 +817,7 @@ export const ToolICT = (props: IconProps) => (
       x2="48"
       y2="42"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
     <line
@@ -826,7 +826,7 @@ export const ToolICT = (props: IconProps) => (
       x2="16"
       y2="46"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
     <line
@@ -835,7 +835,7 @@ export const ToolICT = (props: IconProps) => (
       x2="48"
       y2="46"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
 
@@ -845,7 +845,7 @@ export const ToolICT = (props: IconProps) => (
       x2="40"
       y2="30"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
     <line
@@ -854,7 +854,7 @@ export const ToolICT = (props: IconProps) => (
       x2="24"
       y2="33"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
     <line
@@ -863,7 +863,7 @@ export const ToolICT = (props: IconProps) => (
       x2="40"
       y2="33"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="6"
       stroke-linecap="round"
     />
 
@@ -873,9 +873,126 @@ export const ToolICT = (props: IconProps) => (
       x2="32"
       y2="54"
       stroke="currentColor"
-      stroke-width="1.8"
+      stroke-width="3.5"
       stroke-dasharray="4 4"
       opacity="0.85"
+    />
+  </svg>
+);
+
+export const ToolTonnis = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28px"
+    height="28px"
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="Tonnis angle icon extra thick strokes"
+  >
+    <line
+      x1="4"
+      y1="46"
+      x2="60"
+      y2="46"
+      stroke="currentColor"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="34"
+      y1="46"
+      x2="50"
+      y2="32"
+      stroke="currentColor"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="34"
+      y1="20"
+      x2="34"
+      y2="46"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-dasharray="4 6"
+      stroke-linecap="round"
+    />
+
+    <circle
+      cx="34"
+      cy="46"
+      r="4.5"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+export const ToolHilgenreiner = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28px"
+    height="28px"
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="Hip with acetabular angle icon right aligned"
+  >
+    <path
+      d="M10 20
+       C8 30, 10 44, 20 50
+       C28 54, 36 54, 44 50
+       C54 44, 56 30, 54 20"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <path
+      d="M26 30
+       A12 12 0 0 1 38 30"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="4"
+      stroke-linecap="round"
+    />
+
+    <circle
+      cx="32"
+      cy="38"
+      r="7"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="4"
+    />
+
+    <line
+      x1="2"
+      y1="54"
+      x2="62"
+      y2="54"
+      stroke="currentColor"
+      stroke-width="4"
+      stroke-linecap="round"
+    />
+
+    <line
+      x1="50"
+      y1="54"
+      x2="62"
+      y2="38"
+      stroke="currentColor"
+      stroke-width="4"
+      stroke-linecap="round"
+    />
+
+    <circle
+      cx="50"
+      cy="54"
+      r="2.5"
+      fill="currentColor"
     />
   </svg>
 );
@@ -895,7 +1012,7 @@ export const ToolKiteAngle = (props: IconProps) => (
       x2="26"
       y2="54"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="4"
       stroke-linecap="round"
     />
 
@@ -905,7 +1022,7 @@ export const ToolKiteAngle = (props: IconProps) => (
       x2="48"
       y2="54"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="4"
       stroke-linecap="round"
     />
 
@@ -914,7 +1031,7 @@ export const ToolKiteAngle = (props: IconProps) => (
            A30 30 0 0 0 52 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="3"
+      stroke-width="4"
       stroke-dasharray="2 5"
       stroke-linecap="round"
     />

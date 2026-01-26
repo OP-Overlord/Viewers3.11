@@ -380,8 +380,31 @@ class MetadataProvider {
 
         break;
       case WADO_IMAGE_LOADER_TAGS.CINE_MODULE:
+        // Support both FrameTime (0018,1063) and FrameTimeVector (0018,1065)
+        let effectiveFrameTime = instance.FrameTime;
+
+        // If FrameTime is not available, calculate from FrameTimeVector
+        if (!effectiveFrameTime && instance.FrameTimeVector) {
+          const frameTimeVector = instance.FrameTimeVector;
+          let numericValues: number[];
+
+          if (typeof frameTimeVector === 'string') {
+            numericValues = frameTimeVector.split('\\').map((s: string) => parseFloat(s));
+          } else if (Array.isArray(frameTimeVector)) {
+            numericValues = frameTimeVector.map((v: number | string) => parseFloat(String(v)));
+          } else {
+            numericValues = [parseFloat(frameTimeVector)];
+          }
+
+          const validValues = numericValues.filter((v: number) => !isNaN(v) && v > 0);
+          if (validValues.length > 0) {
+            effectiveFrameTime = validValues.reduce((a: number, b: number) => a + b, 0) / validValues.length;
+          }
+        }
+
         metadata = {
-          frameTime: instance.FrameTime,
+          frameTime: effectiveFrameTime,
+          frameTimeVector: instance.FrameTimeVector,
           numberOfFrames: instance.NumberOfFrames ? Number(instance.NumberOfFrames) : 1,
         };
 

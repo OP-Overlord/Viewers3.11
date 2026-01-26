@@ -519,13 +519,13 @@ const toolbarButtons: Button[] = [
     },
   },
   {
-    id: 'CardioThoracicIndex', // 👈 debe coincidir con CardioThoracicIndexTool.toolName
+    id: 'CardioThoracicIndex',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-ict', // usa este u otro icono que ya tengas (luego puedes crear uno propio)
-      label: 'Cardio-Torácico',
-      tooltip: 'Índice Cardio-Torácico',
-      commands: setToolActiveToolbar, // 👈 igual que el resto de herramientas
+      icon: 'tool-ict',
+      label: 'Indice Cardiotorácico',
+      tooltip: 'Relación entre el ancho cardíaco y el diámetro torácico para evaluar cardiomegalia',
+      commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
         {
@@ -541,7 +541,8 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-kiteangle',
       label: 'Ángulo de Kite',
-      tooltip: 'Ángulo de Kite',
+      tooltip:
+        'Ángulo entre el eje del astrágalo y el calcáneo, usado para evaluar alineación del retropié',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
@@ -553,13 +554,13 @@ const toolbarButtons: Button[] = [
     },
   },
   {
-    id: 'HilgenreinerAngle', // 👈 debe coincidir con KiteAngle.toolName
+    id: 'HilgenreinerAngle',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-kiteangle', // usa este u otro icono que ya tengas (luego puedes crear uno propio)
+      icon: 'tool-hilgenreiner',
       label: 'Ángulo Acetabular',
-      tooltip: 'Ángulo Acetabular',
-      commands: setToolActiveToolbar, // 👈 igual que el resto de herramientas
+      tooltip: 'Inclinación del techo acetabular respecto a la pelvis',
+      commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
         {
@@ -573,9 +574,9 @@ const toolbarButtons: Button[] = [
     id: 'TonnisAngle',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-kiteangle',
+      icon: 'tool-tonnis',
       label: 'Ángulo de Tonnis',
-      tooltip: 'Ángulo de Tonnis (HTE)',
+      tooltip: 'Inclinación del techo acetabular en pelvis infantil',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',

@@ -32,7 +32,7 @@ function WrappedCinePlayer({
   };
 
   const newDisplaySetHandler = useCallback(() => {
-    if (!enabledVPElement || !isCineEnabled) {
+    if (!enabledVPElement) {
       return;
     }
 
@@ -40,6 +40,8 @@ function WrappedCinePlayer({
     const { displaySetInstanceUIDs } = viewports.get(viewportId);
     let frameRate = 24;
     let isPlaying = cines[viewportId]?.isPlaying || false;
+    let shouldAutoPlay = false;
+
     displaySetInstanceUIDs.forEach(displaySetInstanceUID => {
       const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
 
@@ -47,7 +49,10 @@ function WrappedCinePlayer({
         // displaySet.FrameRate corresponds to DICOM tag (0018,1063) which is defined as the the frame time in milliseconds
         // So a bit of math to get the actual frame rate.
         frameRate = Math.round(1000 / displaySet.FrameRate);
-        isPlaying ||= !!appConfig.autoPlayCine;
+        if (appConfig.autoPlayCine) {
+          shouldAutoPlay = true;
+          isPlaying = true;
+        }
       }
 
       // check if the displaySet is dynamic and set the dynamic info
@@ -67,12 +72,15 @@ function WrappedCinePlayer({
       }
     });
 
-    if (isPlaying) {
+    // If autoPlayCine triggered, enable the cine service
+    if (shouldAutoPlay) {
+      cineService.setIsCineEnabled(true);
+    } else if (isPlaying) {
       cineService.setIsCineEnabled(isPlaying);
     }
     cineService.setCine({ id: viewportId, isPlaying, frameRate });
     setNewStackFrameRate(frameRate);
-  }, [displaySetService, viewportId, viewportGridService, cines, isCineEnabled, enabledVPElement]);
+  }, [displaySetService, viewportId, viewportGridService, cines, enabledVPElement, appConfig.autoPlayCine]);
 
   useEffect(() => {
     isMountedRef.current = true;

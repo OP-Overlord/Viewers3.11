@@ -117,7 +117,6 @@ function modeFactory({ modeConfiguration }) {
       toolbarService.updateSection('primary', [
         'MeasurementTools',
         'SpecialMeasures',
-        'Length',
         'Cine',
         'Zoom',
         'Pan',
@@ -158,6 +157,7 @@ function modeFactory({ modeConfiguration }) {
       ]);
 
       toolbarService.updateSection('MeasurementTools', [
+        'Length',
         'Angle',
         'Bidirectional',
         'ArrowAnnotate',

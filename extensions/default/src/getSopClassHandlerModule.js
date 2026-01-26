@@ -19,6 +19,40 @@ const DYNAMIC_VOLUME_LOADER_SCHEME = 'cornerstoneStreamingDynamicImageVolume';
 const sopClassHandlerName = 'stack';
 let appContext = {};
 
+/**
+ * Calculates the average frame time from a FrameTimeVector array.
+ * FrameTimeVector (0018,1065) contains the time in ms between consecutive frames.
+ * @param {Array<number>|string} frameTimeVector - Array of frame times or comma-separated string
+ * @returns {number|null} - Average frame time in ms, or null if invalid
+ */
+const getFrameTimeFromVector = frameTimeVector => {
+  if (!frameTimeVector) {
+    return null;
+  }
+
+  let numericValues;
+
+  // If it's a string (some DICOM parsers return it as string), parse it
+  if (typeof frameTimeVector === 'string') {
+    numericValues = frameTimeVector.split('\\').map(s => parseFloat(s));
+  } else if (Array.isArray(frameTimeVector)) {
+    numericValues = frameTimeVector.map(v => parseFloat(v));
+  } else {
+    numericValues = [parseFloat(frameTimeVector)];
+  }
+
+  // Filter valid numbers and calculate average
+  const validValues = numericValues.filter(v => !isNaN(v) && v > 0);
+
+  if (validValues.length === 0) {
+    return null;
+  }
+
+  // Return the average frame time
+  const sum = validValues.reduce((acc, val) => acc + val, 0);
+  return sum / validValues.length;
+};
+
 const getDynamicVolumeInfo = instances => {
   const { extensionManager } = appContext;
 
@@ -98,6 +132,9 @@ const makeDisplaySet = instances => {
     imageId = middleTimePointImageIds[Math.floor(middleTimePointImageIds.length / 2)];
   }
 
+  // Calculate FrameRate from FrameTime (0018,1063) or FrameTimeVector (0018,1065)
+  const frameRate = instance.FrameTime || getFrameTimeFromVector(instance.FrameTimeVector);
+
   imageSet.setAttributes({
     volumeLoaderSchema,
     displaySetInstanceUID: imageSet.uid, // create a local alias for the imageSet UID
@@ -106,7 +143,7 @@ const makeDisplaySet = instances => {
     SeriesInstanceUID: instance.SeriesInstanceUID,
     StudyInstanceUID: instance.StudyInstanceUID,
     SeriesNumber: instance.SeriesNumber || 0,
-    FrameRate: instance.FrameTime,
+    FrameRate: frameRate,
     SOPClassUID: instance.SOPClassUID,
     SeriesDescription: instance.SeriesDescription || '',
     Modality: instance.Modality,
