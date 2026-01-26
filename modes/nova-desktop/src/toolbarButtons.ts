@@ -559,7 +559,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-hilgenreiner',
       label: 'Ángulo Acetabular',
-      tooltip: 'Inclinación del techo acetabular respecto a la pelvis',
+      tooltip: 'Inclinación del techo acetabular respecto a la pelvi',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',
@@ -604,7 +604,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-tool-cobb-angle',
       label: 'Ángulo de Cobb',
-      tooltip: 'Ángulo de Cobb',
+      tooltip: 'Ángulo que mide la desviación lateral de la columna para evaluar escoliosis',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',

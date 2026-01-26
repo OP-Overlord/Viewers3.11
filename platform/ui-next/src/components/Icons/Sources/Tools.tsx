@@ -3248,14 +3248,32 @@ export const ToolCineNOVA = (props: IconProps) => (
 
 export const ToolWindowLevelNOVA = (props: IconProps) => (
   <svg
+    xmlns="http://www.w3.org/2000/svg"
     width="28px"
     height="28px"
-    viewBox="0 -960 960 960"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="#1f1f1f"
-    {...props}
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="DICOM window level yin yang icon simplified"
   >
-    <path d="M400-40v-80H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h200v-80h80v880h-80ZM200-240h200v-240L200-240Zm360 120v-80h200q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H560Z" />
+    <circle
+      cx="32"
+      cy="32"
+      r="22"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="4"
+    />
+
+    <path
+      d="
+      M32 10
+      C44 10, 44 32, 32 32
+      C20 32, 20 54, 32 54
+      A22 22 0 0 1 32 10
+      Z
+    "
+      fill="currentColor"
+    />
   </svg>
 );
 
