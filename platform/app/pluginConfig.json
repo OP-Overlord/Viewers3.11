@@ -69,6 +69,10 @@
     {
       "packageName": "nova-measures",
       "version": "1.0.0"
+    },
+    {
+      "packageName": "nova-layout",
+      "version": "1.0.0"
     }
   ],
   "modes": [
@@ -104,6 +108,10 @@
     {
       "packageName": "nova-desktop",
       "version": "0.0.3"
+    },
+    {
+      "packageName": "nova-mobile",
+      "version": "1.0.0"
     }
   ],
   "public": [
