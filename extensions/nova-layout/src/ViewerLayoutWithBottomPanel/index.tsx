@@ -5,6 +5,7 @@ import { HangingProtocolService, CommandsManager } from '@ohif/core';
 import { useAppConfig } from '@state';
 import ViewerHeader from './ViewerHeader';
 import BottomPanelWithServices from './BottomPanelWithServices';
+import DebugConsole from './DebugConsole';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle, Onboarding } from '@ohif/ui-next';
 import onboardingCustomization from '../customizations/onboardingCustomization';
 
@@ -210,6 +211,9 @@ function ViewerLayoutWithBottomPanel({
 
         return <Onboarding tours={combinedTours} />;
       })()}
+
+      {/* Debug Console - only visible when URL has debug=true */}
+      <DebugConsole />
     </div>
   );
 }

@@ -17,8 +17,8 @@ function getImageSrcFromImageId(cornerstone, imageId) {
       .loadImageToCanvas({
         canvas,
         imageId,
-        thumbnail: false, // Disable thumbnail mode for better quality
-        renderingEngineId: 'mobileRenderingEngine',
+        thumbnail: true, // Use thumbnail mode for efficient rendering
+        // Don't specify renderingEngineId - let cornerstone use the default
       })
       .then(() => {
         // Export with maximum quality (PNG for lossless)
@@ -59,6 +59,24 @@ const MODALITY_NAMES: Record<string, string> = {
   IO: 'Intraoral',
   PX: 'Panorámica',
 };
+
+// Helper function to format patient name
+function formatPatientName(patientName: string | { Alphabetic?: string } | undefined): string {
+  if (!patientName) return 'Paciente Desconocido';
+  const name = typeof patientName === 'object' ? patientName.Alphabetic : patientName;
+  if (!name) return 'Paciente Desconocido';
+  // Replace ^ with space and clean up
+  return name.replace(/\^/g, ' ').trim();
+}
+
+// Helper function to format date (YYYYMMDD -> DD/MM/YYYY)
+function formatStudyDate(dateStr: string | undefined): string {
+  if (!dateStr || dateStr.length !== 8) return '';
+  const year = dateStr.substring(0, 4);
+  const month = dateStr.substring(4, 6);
+  const day = dateStr.substring(6, 8);
+  return `${day}/${month}/${year}`;
+}
 
 const HorizontalThumbnailList = () => {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
@@ -374,15 +392,59 @@ const HorizontalThumbnailList = () => {
 
   const filteredDisplaySets = displaySets.filter(ds => !ds.excludeFromThumbnailBrowser);
 
+  // Get patient info from first instance of the first display set
+  const firstDisplaySet = displaySets[0];
+  const firstInstance = firstDisplaySet?.instances?.[0];
+  const patientInfo = {
+    patientName: formatPatientName(firstInstance?.PatientName),
+    patientId: firstInstance?.PatientID || '',
+    patientBirthDate: formatStudyDate(firstInstance?.PatientBirthDate),
+    studyDate: formatStudyDate(firstInstance?.StudyDate),
+    studyDescription: firstInstance?.StudyDescription || firstDisplaySet?.StudyDescription || '',
+  };
+
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden bg-black"
+      className="relative flex h-full w-full flex-col overflow-hidden bg-black"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      {/* Single row horizontal scroll - height adapts to container */}
+      {/* Patient Info Header */}
+      <div className="flex-shrink-0 border-b border-gray-700 bg-gray-900/95 px-2 py-1">
+        {/* Line 1: Name */}
+        <p className="truncate text-[11px] text-white">
+          <span className="text-gray-500">Nombre: </span>
+          <span className="font-medium">{patientInfo.patientName}</span>
+        </p>
+        {/* Line 2: ID and Birth Date */}
+        <p className="truncate text-[10px] text-gray-300">
+          {patientInfo.patientId && (
+            <>
+              <span className="text-gray-500">ID: </span>
+              <span>{patientInfo.patientId}</span>
+            </>
+          )}
+          {patientInfo.patientId && patientInfo.patientBirthDate && (
+            <span className="text-gray-600"> · </span>
+          )}
+          {patientInfo.patientBirthDate && (
+            <>
+              <span className="text-gray-500">Fecha Nac: </span>
+              <span>{patientInfo.patientBirthDate}</span>
+            </>
+          )}
+        </p>
+        {/* Line 3: Study Description */}
+        {patientInfo.studyDescription && (
+          <p className="truncate text-[10px] text-gray-300">
+            <span className="text-gray-500">Estudio: </span>
+            <span>{patientInfo.studyDescription}</span>
+          </p>
+        )}
+      </div>
+      {/* Single row horizontal scroll - takes remaining height */}
       <div
-        className="flex h-full w-full items-center overflow-x-auto overflow-y-hidden"
+        className="flex min-h-0 flex-1 w-full items-center overflow-x-auto overflow-y-hidden"
         style={{
           WebkitOverflowScrolling: 'touch',
           scrollSnapType: 'x proximity',
@@ -481,23 +543,18 @@ const HorizontalThumbnailList = () => {
         </div>
       </div>
 
-      {/* Selection info tooltip - appears when a series is tapped */}
+      {/* Selection info tooltip - appears when a series is tapped (positioned below patient header) */}
       {selectedDisplaySet && (
-        <div className="absolute top-0 left-0 right-0 border-b border-gray-700 bg-gray-900/95 px-2 py-1.5 backdrop-blur-sm">
+        <div className="absolute top-[34px] left-0 right-0 border-b border-yellow-500/30 bg-yellow-900/90 px-2 py-1 backdrop-blur-sm">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[11px] font-medium text-white">
+              <p className="truncate text-[10px] font-medium text-yellow-100">
                 {selectedDisplaySet.SeriesDescription || `Serie ${selectedDisplaySet.SeriesNumber}`}
               </p>
-              <p className="text-[9px] text-gray-400">
+              <p className="text-[9px] text-yellow-200/70">
                 {MODALITY_NAMES[selectedDisplaySet.Modality] || selectedDisplaySet.Modality} ·{' '}
                 {selectedDisplaySet.numImageFrames} imágenes
               </p>
-            </div>
-            <div className="flex-shrink-0 rounded border border-yellow-500/50 bg-yellow-500/20 px-1.5 py-0.5">
-              <span className="whitespace-nowrap text-[9px] font-medium text-yellow-400">
-                Doble tap para cargar
-              </span>
             </div>
           </div>
         </div>

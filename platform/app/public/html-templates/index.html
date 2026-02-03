@@ -198,6 +198,68 @@
 
     <title>NOVA Viewer</title>
 
+    <!-- CRITICAL CSS: Splash Screen (inlined for instant display) -->
+    <style>
+      #splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.4s ease-out;
+      }
+      #splash-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+      .splash-logo {
+        width: 180px;
+        height: auto;
+        animation: splashLogoFadeIn 0.6s ease-out forwards;
+        opacity: 0;
+      }
+      .splash-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #8b5cf6;
+        border-radius: 50%;
+        animation: splashSpin 0.8s linear infinite, splashLoaderFadeIn 0.4s ease-out 0.3s forwards;
+        opacity: 0;
+      }
+      .splash-text {
+        color: rgba(255, 255, 255, 0.5);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        animation: splashLoaderFadeIn 0.4s ease-out 0.5s forwards;
+        opacity: 0;
+      }
+      @keyframes splashLogoFadeIn {
+        from { opacity: 0; transform: scale(0.92) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      @keyframes splashLoaderFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes splashSpin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+
     <script>
       function browserImportFunction(moduleId) {
         return import(moduleId);
@@ -223,6 +285,15 @@
   </head>
 
   <body>
+    <!-- SPLASH SCREEN: Displayed immediately before any JS loads -->
+    <div id="splash-screen">
+      <div class="splash-content">
+        <img src="<%= PUBLIC_URL %>nova-dark.svg" alt="NOVA" class="splash-logo" />
+        <div class="splash-spinner"></div>
+        <div class="splash-text">Cargando...</div>
+      </div>
+    </div>
+
     <noscript> You need to enable JavaScript to run this app. </noscript>
     <div id="react-portal"></div>
     <div id="root"></div>

@@ -6,26 +6,8 @@ import { id } from './id';
 const NON_IMAGE_MODALITIES = ['ECG', 'SEG', 'RTSTRUCT', 'RTPLAN', 'PR', 'SM'];
 
 /**
- * Mobile-optimized configuration
- * These settings are applied automatically when entering mobile mode
- */
-const mobileOptimizations = {
-  // Reduce max requests for better memory management on mobile
-  maxNumRequests: {
-    interaction: 50,
-    thumbnail: 30,
-    prefetch: 10,
-  },
-  // Reduce web workers for limited mobile CPU
-  maxNumberOfWebWorkers: 2,
-  // Disable features that are heavy on mobile
-  useSharedArrayBuffer: 'FALSE',
-  strictZSpacingForVolumeViewport: false,
-};
-
-/**
  * Apply mobile-optimized configuration through customizationService
- * This function removes all viewport overlays and applies mobile-specific settings
+ * Solo elimina los overlays del viewport para una UI más limpia en móviles
  */
 function applyMobileConfiguration(customizationService) {
   // Remove all viewport overlays for mobile (cleaner UI, better performance)
@@ -37,16 +19,7 @@ function applyMobileConfiguration(customizationService) {
     'ohif.tours': { $set: [] },
   });
 
-  // Apply window.config optimizations for mobile
-  if (window.config) {
-    window.config.maxNumberOfWebWorkers = mobileOptimizations.maxNumberOfWebWorkers;
-    window.config.maxNumRequests = mobileOptimizations.maxNumRequests;
-    window.config.useSharedArrayBuffer = mobileOptimizations.useSharedArrayBuffer;
-    window.config.strictZSpacingForVolumeViewport =
-      mobileOptimizations.strictZSpacingForVolumeViewport;
-  }
-
-  console.log('[Nova Mobile] Mobile-optimized configuration applied');
+  console.log('[Nova Mobile] Mobile configuration applied (overlays removed)');
 }
 
 const ohif = {
@@ -128,7 +101,7 @@ function modeFactory({ modeConfiguration }) {
 
       measurementService.clearMeasurements();
 
-      // Apply mobile-optimized configuration
+      // Apply mobile-optimized configuration (only removes overlays)
       applyMobileConfiguration(customizationService);
 
       // Init minimal ToolGroups

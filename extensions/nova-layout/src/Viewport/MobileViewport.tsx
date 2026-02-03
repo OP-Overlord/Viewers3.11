@@ -1,242 +1,41 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
-import { ViewportActionArrows } from '@ohif/ui-next';
 import { OHIFCornerstoneViewport } from '@ohif/extension-cornerstone';
-import { useTrackedMeasurements } from '../../../measurement-tracking/src/contexts';
 import ViewportErrorBoundary from './ViewportErrorBoundary';
-
-import { annotation } from '@cornerstonejs/tools';
-import { BaseVolumeViewport, Enums } from '@cornerstonejs/core';
-import { useSystem } from '@ohif/core';
 
 import './MobileViewport.css';
 
+/**
+ * MobileViewport - Simplified viewport for mobile devices
+ * Uses OHIFCornerstoneViewport directly with error boundary for resilience
+ */
 function MobileViewport(
   props: withAppTypes<{ viewportId: string; displaySets: AppTypes.DisplaySet[] }>
 ) {
-  const { servicesManager } = useSystem();
-  const { displaySets, viewportId } = props as {
+  const { viewportId, displaySets } = props as {
     displaySets: AppTypes.DisplaySet[];
     viewportId: string;
-    servicesManager: AppTypes.Services;
   };
 
-  const { measurementService, cornerstoneViewportService, viewportGridService, toolbarService } =
-    servicesManager.services;
-
-  // Todo: handling more than one displaySet on the same viewport
-  const displaySet = displaySets[0];
-  const [trackedMeasurements, sendTrackedMeasurementsEvent] = useTrackedMeasurements() as any;
-
-  const [isTracked, setIsTracked] = useState(false);
-  const [trackedMeasurementUID, setTrackedMeasurementUID] = useState(null);
-  const [viewportElem, setViewportElem] = useState(null);
-
-  // Estado para demorar el renderizado hasta que los datos estén listos
-  const [isReady, setIsReady] = useState(false);
-
-  const { trackedSeries } = trackedMeasurements.context;
-
-  const { SeriesInstanceUID } = displaySet;
-
-  // Demorar el renderizado para dar tiempo a que los datos se inicialicen
-  useEffect(() => {
-    // Verificar si los displaySets tienen imageIds
-    const hasValidData = displaySets?.length > 0 && displaySets[0]?.imageIds?.length > 0;
-
-    if (hasValidData) {
-      setIsReady(true);
-    } else {
-      // Si no hay datos, esperar un poco y verificar de nuevo
-      const timer = setTimeout(() => {
-        setIsReady(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [displaySets]);
-
-  const updateIsTracked = useCallback(() => {
-    const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
-
-    if (viewport instanceof BaseVolumeViewport) {
-      // A current image id will only exist for volume viewports that can have measurements tracked.
-      // Typically these are those volume viewports for the series of acquisition.
-      const currentImageId = viewport?.getCurrentImageId();
-
-      if (!currentImageId) {
-        if (isTracked) {
-          setIsTracked(false);
-        }
-        return;
-      }
-    }
-
-    if (trackedSeries.includes(SeriesInstanceUID) !== isTracked) {
-      setIsTracked(!isTracked);
-    }
-  }, [isTracked, trackedMeasurements, viewportId, SeriesInstanceUID]);
-
-  const onElementEnabled = useCallback(
-    evt => {
-      if (evt.detail.element !== viewportElem) {
-        // The VOLUME_VIEWPORT_NEW_VOLUME event allows updateIsTracked to reliably fetch the image id for a volume viewport.
-        evt.detail.element?.addEventListener(
-          Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME,
-          updateIsTracked
-        );
-        setViewportElem(evt.detail.element);
-      }
-    },
-    [updateIsTracked, viewportElem]
-  );
-
-  const onElementDisabled = useCallback(() => {
-    viewportElem?.removeEventListener(Enums.Events.VOLUME_VIEWPORT_NEW_VOLUME, updateIsTracked);
-  }, [updateIsTracked, viewportElem]);
-
-  useEffect(updateIsTracked, [updateIsTracked]);
-
-  useEffect(() => {
-    const { unsubscribe } = cornerstoneViewportService.subscribe(
-      cornerstoneViewportService.EVENTS.VIEWPORT_DATA_CHANGED,
-      props => {
-        if (props.viewportId !== viewportId) {
-          return;
-        }
-
-        updateIsTracked();
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [updateIsTracked, viewportId]);
-
-  useEffect(() => {
-    if (isTracked) {
-      annotation.config.style.setViewportToolStyles(viewportId, {
-        ReferenceLines: {
-          lineDash: '4,4',
-        },
-        global: {
-          lineDash: '',
-        },
+  // Log viewport info for debugging (visible in eruda console with ?debug=true)
+  React.useEffect(() => {
+    if (displaySets?.length > 0) {
+      const displaySet = displaySets[0] as any;
+      console.log('[MobileViewport] Rendering viewport:', {
+        viewportId,
+        displaySetUID: displaySet?.displaySetInstanceUID,
+        modality: displaySet?.Modality,
+        numFrames: displaySet?.numImageFrames,
+        seriesDescription: displaySet?.SeriesDescription,
       });
-
-      cornerstoneViewportService.getRenderingEngine().renderViewport(viewportId);
-
-      return;
     }
-
-    annotation.config.style.setViewportToolStyles(viewportId, {
-      global: {
-        lineDash: '4,4',
-      },
-    });
-
-    cornerstoneViewportService.getRenderingEngine().renderViewport(viewportId);
-
-    return () => {
-      annotation.config.style.setViewportToolStyles(viewportId, {});
-    };
-  }, [isTracked]);
-
-  /**
-   * The effect for listening to measurement service measurement added events
-   * and in turn firing an event to update the measurement tracking state machine.
-   * The TrackedCornerstoneViewport is the best place for this because when
-   * a measurement is added, at least one TrackedCornerstoneViewport will be in
-   * the DOM and thus can react to the events fired.
-   */
-  useEffect(() => {
-    const added = measurementService.EVENTS.MEASUREMENT_ADDED;
-    const addedRaw = measurementService.EVENTS.RAW_MEASUREMENT_ADDED;
-    const subscriptions = [];
-
-    [added, addedRaw].forEach(evt => {
-      subscriptions.push(
-        measurementService.subscribe(evt, ({ source, measurement }) => {
-          const { activeViewportId } = viewportGridService.getState();
-
-          // Each TrackedCornerstoneViewport receives the MeasurementService's events.
-          // Only send the tracked measurements event for the active viewport to avoid
-          // sending it more than once.
-          if (viewportId === activeViewportId) {
-            const {
-              referenceStudyUID: StudyInstanceUID,
-              referenceSeriesUID: SeriesInstanceUID,
-              uid: measurementId,
-              toolName,
-            } = measurement;
-
-            sendTrackedMeasurementsEvent('SET_DIRTY', { SeriesInstanceUID });
-            sendTrackedMeasurementsEvent('TRACK_SERIES', {
-              viewportId,
-              StudyInstanceUID,
-              SeriesInstanceUID,
-              measurementId,
-              toolName,
-            });
-          }
-        }).unsubscribe
-      );
-    });
-
-    return () => {
-      subscriptions.forEach(unsub => {
-        unsub();
-      });
-    };
-  }, [measurementService, sendTrackedMeasurementsEvent, viewportId, viewportGridService]);
-
-  const switchMeasurement = useCallback(
-    direction => {
-      const newTrackedMeasurementUID = _getNextMeasurementUID(
-        direction,
-        servicesManager,
-        trackedMeasurementUID,
-        trackedMeasurements
-      );
-
-      if (!newTrackedMeasurementUID) {
-        return;
-      }
-
-      setTrackedMeasurementUID(newTrackedMeasurementUID);
-
-      measurementService.jumpToMeasurement(viewportId, newTrackedMeasurementUID);
-    },
-    [measurementService, servicesManager, trackedMeasurementUID, trackedMeasurements, viewportId]
-  );
-
-  const getCornerstoneViewport = () => {
-    return (
-      <OHIFCornerstoneViewport
-        {...props}
-        onElementEnabled={evt => {
-          (props as any).onElementEnabled?.(evt);
-          onElementEnabled(evt);
-        }}
-        onElementDisabled={onElementDisabled}
-      />
-    );
-  };
-
-  // Mostrar loading mientras esperamos que los datos estén listos
-  if (!isReady) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <div className="text-muted-foreground text-sm">Cargando viewport...</div>
-      </div>
-    );
-  }
+  }, [viewportId, displaySets]);
 
   return (
     <ViewportErrorBoundary viewportId={viewportId}>
       <div className="mobile-viewport-wrapper relative flex h-full w-full flex-row overflow-hidden">
-        {getCornerstoneViewport()}
+        <OHIFCornerstoneViewport {...props} />
       </div>
     </ViewportErrorBoundary>
   );
@@ -247,72 +46,6 @@ MobileViewport.propTypes = {
   viewportId: PropTypes.string.isRequired,
   dataSource: PropTypes.object,
   children: PropTypes.node,
-};
-
-function _getNextMeasurementUID(
-  direction,
-  servicesManager: AppTypes.ServicesManager,
-  trackedMeasurementId,
-  trackedMeasurements
-) {
-  const { measurementService, viewportGridService } = servicesManager.services;
-  const measurements = measurementService.getMeasurements();
-
-  const { activeViewportId, viewports } = viewportGridService.getState();
-  const { displaySetInstanceUIDs: activeViewportDisplaySetInstanceUIDs } =
-    viewports.get(activeViewportId);
-
-  const { trackedSeries } = trackedMeasurements.context;
-
-  // Get the potentially trackable measurements for the series of the
-  // active viewport.
-  // The measurements to jump between are the same
-  // regardless if this series is tracked or not.
-
-  const filteredMeasurements = measurements.filter(
-    m =>
-      trackedSeries.includes(m.referenceSeriesUID) &&
-      activeViewportDisplaySetInstanceUIDs.includes(m.displaySetInstanceUID)
-  );
-
-  if (!filteredMeasurements.length) {
-    // No measurements on this series.
-    return;
-  }
-
-  const measurementCount = filteredMeasurements.length;
-
-  const uids = filteredMeasurements.map(fm => fm.uid);
-  let measurementIndex = uids.findIndex(uid => uid === trackedMeasurementId);
-
-  if (measurementIndex === -1) {
-    // Not tracking a measurement, or previous measurement now deleted, revert to 0.
-    measurementIndex = 0;
-  } else {
-    measurementIndex += direction;
-    if (measurementIndex < 0) {
-      measurementIndex = measurementCount - 1;
-    } else if (measurementIndex === measurementCount) {
-      measurementIndex = 0;
-    }
-  }
-
-  const newTrackedMeasurementId = uids[measurementIndex];
-
-  return newTrackedMeasurementId;
-}
-
-const _getArrowsComponent = (isTracked, switchMeasurement, isActiveViewport) => {
-  if (!isTracked) {
-    return null;
-  }
-
-  return (
-    <ViewportActionArrows
-      onArrowsClick={direction => switchMeasurement(direction)}
-      className={isActiveViewport ? 'visible' : 'invisible group-hover/pane:visible'}
-    />
-  );
 };
 
 export default MobileViewport;

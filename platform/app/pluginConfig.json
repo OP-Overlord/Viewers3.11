@@ -77,6 +77,14 @@
   ],
   "modes": [
     {
+      "packageName": "nova-mobile",
+      "version": "1.0.0"
+    },
+    {
+      "packageName": "nova-desktop",
+      "version": "0.0.3"
+    },
+    {
       "packageName": "@ohif/mode-longitudinal"
     },
     {
@@ -104,14 +112,6 @@
     {
       "packageName": "@ohif/mode-ultrasound-pleura-bline",
       "version": "3.0.0"
-    },
-    {
-      "packageName": "nova-desktop",
-      "version": "0.0.3"
-    },
-    {
-      "packageName": "nova-mobile",
-      "version": "1.0.0"
     }
   ],
   "public": [
