@@ -1,5 +1,6 @@
 import { Types } from '@ohif/core';
 import HorizontalThumbnailList from './ViewerLayoutWithBottomPanel/HorizontalThumbnailList';
+import NovaPanelStudyBrowser from './Panels/NovaPanelStudyBrowser';
 
 function getPanelModule(): Types.Panel[] {
   return [
@@ -9,6 +10,13 @@ function getPanelModule(): Types.Panel[] {
       iconLabel: 'Series',
       label: 'Series',
       component: HorizontalThumbnailList,
+    },
+    {
+      name: 'cachedSeriesList',
+      iconName: 'tab-studies',
+      iconLabel: 'Studies',
+      label: 'Studies',
+      component: NovaPanelStudyBrowser,
     },
   ];
 }

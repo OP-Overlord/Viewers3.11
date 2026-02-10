@@ -2,6 +2,7 @@ import { hotkeys } from '@ohif/core';
 import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import { id } from './id';
+import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
 import './nova-theme.css';
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
@@ -24,6 +25,9 @@ const tracked = {
   measurements: '@ohif/extension-measurement-tracking.panelModule.trackedMeasurements',
   thumbnailList: '@ohif/extension-measurement-tracking.panelModule.seriesList',
   viewport: '@ohif/extension-measurement-tracking.viewportModule.cornerstone-tracked',
+};
+const nova = {
+  cachedSeriesList: 'nova-layout.panelModule.cachedSeriesList',
 };
 const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
@@ -71,10 +75,12 @@ const extensionDependencies = {
   '@ohif/extension-dicom-pdf': '^3.0.1',
   '@ohif/extension-dicom-video': '^3.0.1',
   'nova-measures': '^1.0.0',
+  'nova-layout': '^1.0.0',
 };
 
 function modeFactory({ modeConfiguration }) {
   let _activatePanelTriggersSubscriptions = [];
+  let _thumbnailPreloadSub: { unsubscribe: () => void } | null = null;
   return {
     /**
      * Mode ID, which should be unique among modes used by the viewer. This ID
@@ -189,6 +195,22 @@ function modeFactory({ modeConfiguration }) {
         'panelSegmentation.disableEditing': {
           $set: true,
         },
+        'ohif.hotkeyBindings': {
+          $push: [
+            {
+              commandName: 'copyViewportToClipboard',
+              label: 'Copy Viewport to Clipboard',
+              keys: ['ctrl+c'],
+              isEditable: true,
+            },
+            {
+              commandName: 'toggleViewportOverlays',
+              label: 'Toggle Viewport Overlays',
+              keys: ['x'],
+              isEditable: true,
+            },
+          ],
+        },
       });
       // si está en DX/CR/RX, mostramos el grupo; si no, lo vaciamos (queda oculto)
       toolbarService.updateSection('SpecialMeasures', [
@@ -198,6 +220,9 @@ function modeFactory({ modeConfiguration }) {
         'HilgenreinerAngle',
         'TonnisAngle',
       ]);
+
+      // Precargar thumbnails para que estén listas cuando se abra el panel
+      _thumbnailPreloadSub = preloadThumbnails(servicesManager, extensionManager);
 
       // ==========================
       //  HOVER PARA PANEL IZQUIERDO usando el botón existente (simple por ciclos)
@@ -304,6 +329,7 @@ function modeFactory({ modeConfiguration }) {
     onModeExit: ({ servicesManager }: withAppTypes) => {
       const root = document.getElementById('root');
       root?.classList.remove('theme-nova');
+      root?.classList.remove('nova-hide-overlays');
 
       const {
         toolGroupService,
@@ -316,6 +342,11 @@ function modeFactory({ modeConfiguration }) {
 
       _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
       _activatePanelTriggersSubscriptions = [];
+
+      if (_thumbnailPreloadSub) {
+        _thumbnailPreloadSub.unsubscribe();
+        _thumbnailPreloadSub = null;
+      }
 
       uiDialogService.hideAll();
       uiModalService.hide();
@@ -363,7 +394,7 @@ function modeFactory({ modeConfiguration }) {
           return {
             id: ohif.layout,
             props: {
-              leftPanels: [tracked.thumbnailList],
+              leftPanels: [nova.cachedSeriesList],
               leftPanelResizable: true,
               leftPanelClosed: true,
 

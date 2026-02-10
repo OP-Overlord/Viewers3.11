@@ -36,6 +36,7 @@ import toggleVOISliceSync from './utils/toggleVOISliceSync';
 import { usePositionPresentationStore, useSegmentationPresentationStore } from './stores';
 import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
+import html2canvas from 'html2canvas';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
@@ -909,6 +910,59 @@ function commandsModule({
           containerClassName: 'max-w-4xl p-4',
         });
       }
+    },
+    // Copy active viewport (with annotations) to clipboard
+    copyViewportToClipboard: async () => {
+      const { activeViewportId } = viewportGridService.getState();
+      const enabledElementInfo = getActiveViewportEnabledElement(viewportGridService);
+
+      if (!enabledElementInfo?.viewport?.element) {
+        uiNotificationService.show({
+          title: 'Copiar',
+          message: 'No se pudo acceder al viewport activo',
+          type: 'error',
+        });
+        return;
+      }
+
+      try {
+        const element = enabledElementInfo.viewport.element as HTMLElement;
+        const canvas = await html2canvas(element);
+
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+        });
+
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+        uiNotificationService.show({
+          title: 'Copiar',
+          message: 'Imagen copiada al portapapeles',
+          type: 'success',
+        });
+      } catch (e) {
+        console.error('Error copying viewport to clipboard:', e);
+        uiNotificationService.show({
+          title: 'Copiar',
+          message: 'Error al copiar la imagen al portapapeles',
+          type: 'error',
+        });
+      }
+    },
+    // Toggle viewport overlay data visibility
+    toggleViewportOverlays: () => {
+      const root = document.getElementById('root');
+      if (!root) {
+        return;
+      }
+
+      const hidden = root.classList.toggle('nova-hide-overlays');
+
+      uiNotificationService.show({
+        title: 'Overlays',
+        message: hidden ? 'Datos de overlay ocultos' : 'Datos de overlay visibles',
+        type: 'info',
+      });
     },
     /**
      * Rotates the viewport by `rotation` relative to its current rotation.
@@ -2212,6 +2266,12 @@ function commandsModule({
     },
     showDownloadViewportModal: {
       commandFn: actions.showDownloadViewportModal,
+    },
+    copyViewportToClipboard: {
+      commandFn: actions.copyViewportToClipboard,
+    },
+    toggleViewportOverlays: {
+      commandFn: actions.toggleViewportOverlays,
     },
     toggleCine: {
       commandFn: actions.toggleCine,

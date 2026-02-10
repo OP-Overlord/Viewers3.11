@@ -2,16 +2,43 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSystem } from '@ohif/core';
 import { useImageViewer, useViewportGrid } from '@ohif/ui-next';
 
+// Prefix for all thumbnail logs
+const LOG_PREFIX = '[Thumbnails]';
+
 // Higher quality thumbnail size (larger = better quality when scaled down)
 const THUMBNAIL_SIZE = 512;
 
+// Cache max texture size
+let cachedMaxTextureSize: number | null = null;
+
+function getMaxTextureSize(): number {
+  if (cachedMaxTextureSize !== null) return cachedMaxTextureSize;
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (gl) {
+      cachedMaxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      return cachedMaxTextureSize;
+    }
+  } catch (e) {
+    console.error(`${LOG_PREFIX} Error getting max texture size:`, e);
+  }
+  cachedMaxTextureSize = 4096;
+  return cachedMaxTextureSize;
+}
+
 // Helper function to get image src from imageId using cornerstone utilities
-function getImageSrcFromImageId(cornerstone, imageId) {
+function getImageSrcFromImageId(cornerstone: any, imageId: string, modality: string) {
+  const startTime = Date.now();
+  console.log(`${LOG_PREFIX} Loading thumbnail for ${modality}:`, imageId?.substring(0, 80));
+
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     // Set explicit dimensions for better quality
     canvas.width = THUMBNAIL_SIZE;
     canvas.height = THUMBNAIL_SIZE;
+
+    console.log(`${LOG_PREFIX} Created canvas ${THUMBNAIL_SIZE}x${THUMBNAIL_SIZE} for ${modality}`);
 
     cornerstone.utilities
       .loadImageToCanvas({
@@ -21,10 +48,24 @@ function getImageSrcFromImageId(cornerstone, imageId) {
         // Don't specify renderingEngineId - let cornerstone use the default
       })
       .then(() => {
-        // Export with maximum quality (PNG for lossless)
-        resolve(canvas.toDataURL('image/png'));
+        const elapsed = Date.now() - startTime;
+        console.log(`${LOG_PREFIX} ✓ Canvas loaded for ${modality} (${elapsed}ms)`);
+
+        try {
+          // Export with maximum quality (PNG for lossless)
+          const dataUrl = canvas.toDataURL('image/png');
+          console.log(`${LOG_PREFIX} ✓ DataURL generated for ${modality}, length: ${dataUrl?.length}`);
+          resolve(dataUrl);
+        } catch (e) {
+          console.error(`${LOG_PREFIX} ✗ Error generating dataURL for ${modality}:`, e);
+          reject(e);
+        }
       })
-      .catch(reject);
+      .catch(err => {
+        const elapsed = Date.now() - startTime;
+        console.error(`${LOG_PREFIX} ✗ loadImageToCanvas FAILED for ${modality} (${elapsed}ms):`, err);
+        reject(err);
+      });
   });
 }
 
@@ -117,15 +158,15 @@ const HorizontalThumbnailList = () => {
 
   // Create getImageSrc function using cornerstone libraries
   const getImageSrc = useCallback(
-    imageId => {
+    (imageId: string, modality: string) => {
       try {
         const utilities = extensionManager.getModuleEntry(
           '@ohif/extension-cornerstone.utilityModule.common'
-        );
+        ) as any;
         const { cornerstone } = utilities.exports.getCornerstoneLibraries();
-        return getImageSrcFromImageId(cornerstone, imageId);
+        return getImageSrcFromImageId(cornerstone, imageId, modality);
       } catch (error) {
-        console.warn('Error getting cornerstone libraries:', error);
+        console.error(`${LOG_PREFIX} ✗ Error getting cornerstone libraries:`, error);
         return Promise.reject(error);
       }
     },
@@ -164,45 +205,116 @@ const HorizontalThumbnailList = () => {
 
   // Load thumbnails
   useEffect(() => {
-    if (!hasLoadedViewports || !dataSource) return;
+    console.log(`${LOG_PREFIX} ========== THUMBNAIL LOAD EFFECT ==========`);
+    console.log(`${LOG_PREFIX} hasLoadedViewports: ${hasLoadedViewports}, dataSource: ${!!dataSource}`);
+
+    if (!hasLoadedViewports || !dataSource) {
+      console.log(`${LOG_PREFIX} Skipping - waiting for viewports or dataSource`);
+      return;
+    }
 
     const thumbnailNoImageModalities = ['SR', 'SEG', 'RTSTRUCT', 'RTPLAN', 'RTDOSE', 'DOC', 'PMAP'];
-    const currentDisplaySets = displaySetService.activeDisplaySets.filter(
-      ds => !thumbnailNoImageModalities.includes(ds.Modality)
+    const allDisplaySets = displaySetService.activeDisplaySets;
+    console.log(`${LOG_PREFIX} Total displaySets: ${allDisplaySets.length}`);
+
+    const currentDisplaySets = allDisplaySets.filter(
+      (ds: any) => !thumbnailNoImageModalities.includes(ds.Modality)
     );
+    console.log(`${LOG_PREFIX} Filtered displaySets (with images): ${currentDisplaySets.length}`);
 
-    currentDisplaySets.forEach(async dSet => {
-      const displaySet = displaySetService.getDisplaySetByUID(dSet.displaySetInstanceUID);
-      if (displaySet?.unsupported) return;
+    const maxTextureSize = getMaxTextureSize();
+    console.log(`${LOG_PREFIX} WebGL Max Texture Size: ${maxTextureSize}`);
 
-      if (thumbnailImageSrcMap[dSet.displaySetInstanceUID]) return;
-      if (loadingThumbnails.has(dSet.displaySetInstanceUID)) return;
+    currentDisplaySets.forEach(async (dSet: any) => {
+      const modality = dSet.Modality || 'UNKNOWN';
+      const uid = dSet.displaySetInstanceUID;
 
+      console.log(`${LOG_PREFIX} Processing ${modality} - UID: ${uid?.substring(0, 20)}...`);
+
+      // Log image dimensions from instance metadata BEFORE loading
+      if (dSet.instances?.length > 0) {
+        const firstInstance = dSet.instances[0];
+        const rows = firstInstance?.Rows || firstInstance?.metadata?.Rows;
+        const columns = firstInstance?.Columns || firstInstance?.metadata?.Columns;
+        const bitsAllocated = firstInstance?.BitsAllocated || firstInstance?.metadata?.BitsAllocated;
+        const transferSyntaxUID =
+          firstInstance?.TransferSyntaxUID || firstInstance?.metadata?.TransferSyntaxUID;
+
+        const exceedsLimit = (rows && rows > maxTextureSize) || (columns && columns > maxTextureSize);
+
+        console.log(`${LOG_PREFIX} 📋 ${modality} INSTANCE METADATA:`, {
+          rows,
+          columns,
+          maxTextureSize,
+          EXCEEDS_TEXTURE_LIMIT: exceedsLimit ? '⚠️ YES - WILL LIKELY FAIL!' : '✓ No',
+          bitsAllocated,
+          transferSyntaxUID,
+        });
+
+        if (exceedsLimit) {
+          console.error(
+            `${LOG_PREFIX} ⚠️ ${modality} IMAGE TOO LARGE: ${columns}x${rows} exceeds WebGL limit ${maxTextureSize}!`
+          );
+        }
+      }
+
+      const displaySet = displaySetService.getDisplaySetByUID(uid);
+      if (displaySet?.unsupported) {
+        console.log(`${LOG_PREFIX} Skipping ${modality} - unsupported`);
+        return;
+      }
+
+      if (thumbnailImageSrcMap[uid]) {
+        console.log(`${LOG_PREFIX} Skipping ${modality} - already loaded`);
+        return;
+      }
+      if (loadingThumbnails.has(uid)) {
+        console.log(`${LOG_PREFIX} Skipping ${modality} - already loading`);
+        return;
+      }
+
+      // Get imageIds
+      console.log(`${LOG_PREFIX} Getting imageIds for ${modality}...`);
       const imageIds = dataSource?.getImageIdsForDisplaySet?.(dSet);
-      if (!imageIds?.length) return;
+
+      if (!imageIds?.length) {
+        console.warn(`${LOG_PREFIX} ✗ No imageIds for ${modality}! DisplaySet:`, {
+          displaySetInstanceUID: uid,
+          numImageFrames: dSet.numImageFrames,
+          instances: dSet.instances?.length,
+          sopClassUIDs: dSet.sopClassUIDs,
+        });
+        return;
+      }
+
+      console.log(`${LOG_PREFIX} ${modality} has ${imageIds.length} imageIds`);
 
       const imageId = imageIds[Math.floor(imageIds.length / 2)];
+      console.log(`${LOG_PREFIX} Using middle imageId for ${modality}:`, imageId?.substring(0, 80));
 
-      setLoadingThumbnails(prev => new Set(prev).add(dSet.displaySetInstanceUID));
+      setLoadingThumbnails(prev => new Set(prev).add(uid));
 
       try {
         // Always generate our own high-quality thumbnail instead of using cached ones
-        // The cached thumbnailSrc from OHIF core is often low quality
-        const thumbnailSrc = await getImageSrc(imageId);
+        console.log(`${LOG_PREFIX} Starting thumbnail generation for ${modality}...`);
+        const thumbnailSrc = await getImageSrc(imageId, modality);
 
         if (thumbnailSrc) {
+          console.log(`${LOG_PREFIX} ✓ Thumbnail generated for ${modality}`);
           // Store in our map (don't override displaySet.thumbnailSrc to avoid affecting other parts)
           setThumbnailImageSrcMap(prev => ({
             ...prev,
-            [dSet.displaySetInstanceUID]: thumbnailSrc,
+            [uid]: thumbnailSrc,
           }));
+        } else {
+          console.warn(`${LOG_PREFIX} ✗ Empty thumbnailSrc for ${modality}`);
         }
       } catch (error) {
-        console.warn('Error loading thumbnail for', dSet.displaySetInstanceUID, error);
+        console.error(`${LOG_PREFIX} ✗ FAILED to load thumbnail for ${modality}:`, error);
       } finally {
         setLoadingThumbnails(prev => {
           const next = new Set(prev);
-          next.delete(dSet.displaySetInstanceUID);
+          next.delete(uid);
           return next;
         });
       }

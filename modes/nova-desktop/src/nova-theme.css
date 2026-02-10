@@ -10,9 +10,9 @@
   --primary-hover: #00d9ff; /* Bright Cyan */
   --accent-color: #00d9ff; /* Bright Cyan Accent */
   --accent-hover: #5baaff;
-  --bg-color: #0a1628; /* Deep Navy Blue */
-  --bg-elevated: #0d1b2e; /* Slightly Elevated Navy */
-  --bg-panel: #0f1f30; /* Panel Background */
+  --bg-color: #000000; /* Pure Black */
+  --bg-elevated: #0a0a0a; /* Slightly Elevated Black */
+  --bg-panel: #111111; /* Panel Background */
   --text-color: #ffffff; /* Pure White */
   --text-secondary: #7b8b9f; /* Muted Blue-Gray */
   --text-muted: #5a6b7f; /* Darker Muted */
@@ -25,11 +25,39 @@
   --error-color: #ef4444;
   --info-color: #4a9eff;
 
+  /* === OVERRIDE TAILWIND CSS VARIABLES - Force pure black backgrounds === */
+  --background: 0 0% 0%; /* Pure Black */
+  --background-elevated: 0 0% 4%; /* Slightly Elevated Black */
+  --background-panel: 0 0% 7%; /* Panel Background */
+  --popover: 0 0% 0%; /* Dropdowns/Popovers */
+  --card: 0 0% 0%; /* Cards */
+  --muted: 0 0% 0%; /* Muted elements */
+
   /* === SHADOWS === */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(74, 158, 255, 0.3);
+}
+
+/* Propagate black background variables to Radix portals rendered on body */
+body:has(.theme-nova) {
+  --background: 0 0% 0%;
+  --popover: 0 0% 0%;
+  --card: 0 0% 0%;
+  --muted: 0 0% 0%;
+}
+
+/* Add border to dialog modals (portals) rendered on body */
+body:has(.theme-nova) [role='dialog'].bg-muted {
+  border: 1px solid var(--primary-color, #4a9eff);
+  border-radius: 8px;
+}
+
+/* Add border to image preview area inside download modal */
+body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
+  border: 1px solid var(--primary-color, #4a9eff);
+  border-radius: 12px;
 }
 
 /* === HEADER ENHANCEMENTS === */
@@ -44,6 +72,11 @@
 /* Fix header container height to accommodate larger buttons with labels */
 .theme-nova [class*='bg-secondary-dark'] > div[class*='relative'][class*='items-center'] {
   height: 94px !important; /* Increased to accommodate 74px buttons */
+}
+
+/* Force toolbar background to pure black */
+.theme-nova [class*='bg-secondary-dark'] {
+  background-color: var(--bg-color) !important;
 }
 
 /* Main toolbar container - Increased height for buttons with labels */
@@ -443,15 +476,37 @@
   background: var(--bg-elevated);
 }
 
+/* Force non-variable Tailwind backgrounds to pure black */
+.theme-nova .bg-bkg-low {
+  background-color: var(--bg-color) !important;
+}
+
+.theme-nova .bg-bkg-med {
+  background-color: var(--bg-color) !important;
+}
+
+.theme-nova .bg-primary-dark {
+  background-color: var(--bg-color) !important;
+}
+
+/* Add blue border to thumbnail and popover containers */
+.theme-nova .bg-muted {
+  border: 1px solid var(--primary-color);
+}
+
+.theme-nova .bg-popover {
+  border: 1px solid var(--primary-color);
+}
+
 .theme-nova .study-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
   border-radius: 4px;
   transition: all 150ms ease;
 }
 
 .theme-nova .study-item:hover {
-  border-color: var(--border-color);
+  border-color: var(--primary-color);
   box-shadow: none;
   transform: none;
 }
@@ -525,7 +580,7 @@
 
 /* === MODAL DIALOGS === */
 .theme-nova .modal-overlay {
-  background: rgba(10, 14, 26, 0.85);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -609,7 +664,7 @@
 
 /* === TOOLTIPS === */
 .theme-nova .tooltip {
-  background: rgba(17, 24, 39, 0.95);
+  background: rgba(0, 0, 0, 0.95);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
@@ -654,6 +709,11 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* === VIEWPORT OVERLAY TOGGLE (hotkey X) === */
+.nova-hide-overlays .overlay-text {
+  display: none !important;
 }
 
 /* === RESPONSIVE ADJUSTMENTS === */

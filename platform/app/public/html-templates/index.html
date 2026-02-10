@@ -258,6 +258,12 @@
       @keyframes splashSpin {
         to { transform: rotate(360deg); }
       }
+      /* Solo mostrar splash en dispositivos móviles */
+      @media (min-width: 768px) {
+        #splash-screen {
+          display: none !important;
+        }
+      }
     </style>
 
     <script>

@@ -22,6 +22,51 @@ function applyMobileConfiguration(customizationService) {
   console.log('[Nova Mobile] Mobile configuration applied (overlays removed)');
 }
 
+/**
+ * Configure dataSource to request uncompressed transfer syntax for mobile
+ * JPEG-LS (1.2.840.10008.1.2.4.80) fails silently on mobile due to WASM decoder issues
+ * We request Explicit VR Little Endian (uncompressed) instead
+ */
+function configureMobileTransferSyntax(extensionManager) {
+  try {
+    const [dataSource] = extensionManager.getActiveDataSource();
+    if (!dataSource) {
+      console.warn('[Nova Mobile] No active dataSource found');
+      return;
+    }
+
+    const config = dataSource.getConfig?.();
+    if (!config) {
+      console.warn('[Nova Mobile] DataSource has no config');
+      return;
+    }
+
+    // Store original config for reference
+    const originalAcceptHeader = config.acceptHeader;
+
+    // Override the configuration for mobile
+    // Request uncompressed or JPEG baseline instead of JPEG-LS
+    config.acceptHeader = [
+      'multipart/related; type=application/octet-stream; q=1',
+      'multipart/related; type=image/jpeg; q=0.8',
+      'multipart/related; type=image/jls; q=0.3',
+      'multipart/related; type=application/pdf; q=0.5',
+    ];
+
+    // Request server-side transcoding to uncompressed format
+    // 1.2.840.10008.1.2.1 = Explicit VR Little Endian (uncompressed, widely supported)
+    // '*' = Let server decide (might still send JPEG-LS)
+    config.requestTransferSyntaxUID = '1.2.840.10008.1.2.1';
+
+    console.log('[Nova Mobile] Transfer Syntax configured for mobile compatibility');
+    console.log('[Nova Mobile] Original acceptHeader:', originalAcceptHeader);
+    console.log('[Nova Mobile] New acceptHeader:', config.acceptHeader);
+    console.log('[Nova Mobile] requestTransferSyntaxUID:', config.requestTransferSyntaxUID);
+  } catch (error) {
+    console.error('[Nova Mobile] Failed to configure transfer syntax:', error);
+  }
+}
+
 const ohif = {
   sopClassHandler: '@ohif/extension-default.sopClassHandlerModule.stack',
   thumbnailList: '@ohif/extension-default.panelModule.seriesList',
@@ -100,6 +145,10 @@ function modeFactory({ modeConfiguration }) {
         servicesManager.services;
 
       measurementService.clearMeasurements();
+
+      // Configure dataSource to request mobile-compatible transfer syntax
+      // This avoids JPEG-LS which fails on mobile devices
+      configureMobileTransferSyntax(extensionManager);
 
       // Apply mobile-optimized configuration (only removes overlays)
       applyMobileConfiguration(customizationService);
