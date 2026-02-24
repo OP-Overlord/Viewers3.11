@@ -7,6 +7,15 @@ import { ViewportGridService } from '@ohif/core';
 import { defaults } from '@ohif/core';
 const { windowLevelPresets } = defaults;
 
+const callbacks = (toolName: string) => [
+  {
+    commandName: 'setViewportForToolConfiguration',
+    commandOptions: {
+      toolName,
+    },
+  },
+];
+
 /**
  *
  * @param {*} preset - preset number (from above import)
@@ -449,7 +458,13 @@ const toolbarButtons: Button[] = [
           commandOptions: { toggledState: true },
         },
       },
-      evaluate: 'evaluate.cornerstone.synchronizer',
+      evaluate: [
+        'evaluate.cornerstone.synchronizer',
+        {
+          name: 'evaluate.viewport.supported',
+          unsupportedViewportTypes: ['video', 'volume3d'],
+        },
+      ],
     },
   },
   {
@@ -460,7 +475,17 @@ const toolbarButtons: Button[] = [
       label: 'Lineas de referencia',
       tooltip: 'Lineas de referencia',
       commands: 'toggleEnabledDisabledToolbar',
-      evaluate: 'evaluate.cornerstoneTool.toggle',
+      listeners: {
+        [ViewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED]: callbacks('ReferenceLines'),
+        [ViewportGridService.EVENTS.VIEWPORTS_READY]: callbacks('ReferenceLines'),
+      },
+      evaluate: [
+        'evaluate.cornerstoneTool.toggle',
+        {
+          name: 'evaluate.viewport.supported',
+          unsupportedViewportTypes: ['video'],
+        },
+      ],
     },
   },
   {
@@ -577,6 +602,23 @@ const toolbarButtons: Button[] = [
       icon: 'tool-tonnis',
       label: 'Ángulo de Tonnis',
       tooltip: 'Inclinación del techo acetabular en pelvis infantil',
+      commands: setToolActiveToolbar,
+      evaluate: [
+        'evaluate.cornerstoneTool',
+        {
+          name: 'evaluate.modality.supported',
+          supportedModalities: ['DX', 'CR', 'RX'],
+        },
+      ],
+    },
+  },
+  {
+    id: 'InsallSalvatiIndex',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'tool-insall-salvati',
+      label: 'Índice Insall-Salvati',
+      tooltip: 'Relación entre la longitud del tendón rotuliano y la rótula para evaluar la posición de la rótula',
       commands: setToolActiveToolbar,
       evaluate: [
         'evaluate.cornerstoneTool',

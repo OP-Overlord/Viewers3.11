@@ -3261,7 +3261,7 @@ export const ToolWindowLevelNOVA = (props: IconProps) => (
       r="22"
       fill="none"
       stroke="currentColor"
-      stroke-width="4"
+      strokeWidth="4"
     />
 
     <path
@@ -3798,6 +3798,30 @@ export const ToolExpand = (props: IconProps) => (
     />
   </svg>
 );
+export const ToolInsallSalvati = (props: IconProps) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="28px"
+    height="28px"
+    viewBox="0 0 64 64"
+    role="img"
+    aria-label="Insall-Salvati index icon"
+    {...props}
+  >
+    {/* Segmento 1: rótula (más corto, izquierda) */}
+    <line x1="22" y1="18" x2="22" y2="46" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    {/* Marcas en extremos de segmento 1 */}
+    <line x1="16" y1="18" x2="28" y2="18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <line x1="16" y1="46" x2="28" y2="46" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+
+    {/* Segmento 2: tendón (más largo, derecha) */}
+    <line x1="42" y1="10" x2="42" y2="54" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeDasharray="5 3" />
+    {/* Marcas en extremos de segmento 2 */}
+    <line x1="36" y1="10" x2="48" y2="10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <line x1="36" y1="54" x2="48" y2="54" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
 export const ToolContract = (props: IconProps) => (
   <svg
     width="24"

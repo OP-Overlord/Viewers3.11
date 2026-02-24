@@ -175,6 +175,11 @@ window.config = {
     thumbnail: 75,
     prefetch: 25,
   },
+  modesConfiguration: {
+    'nova-desktop': {
+      clinicalNewsEnabled: false,
+    },
+  },
   defaultDataSourceName: 'nova',
   dataSources: [
     {

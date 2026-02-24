@@ -76,11 +76,14 @@ const extensionDependencies = {
   '@ohif/extension-dicom-video': '^3.0.1',
   'nova-measures': '^1.0.0',
   'nova-layout': '^1.0.0',
+  'nova-clinical-news': '^1.0.0',
 };
 
 function modeFactory({ modeConfiguration }) {
+  const clinicalNewsEnabled = modeConfiguration?.clinicalNewsEnabled === true;
   let _activatePanelTriggersSubscriptions = [];
   let _thumbnailPreloadSub: { unsubscribe: () => void } | null = null;
+  let _stackScrollActivated = false;
   return {
     /**
      * Mode ID, which should be unique among modes used by the viewer. This ID
@@ -120,7 +123,23 @@ function modeFactory({ modeConfiguration }) {
       initToolGroups(extensionManager, toolGroupService, commandsManager);
 
       toolbarService.register([...toolbarButtons]);
-      toolbarService.updateSection('primary', [
+
+      // Registrar botón de noticias clínicas (solo si está habilitado)
+      if (clinicalNewsEnabled) {
+        toolbarService.register([
+          {
+            id: 'ClinicalNewsBell',
+            uiType: 'nova.clinicalNewsBell',
+            props: {
+              icon: 'notifications-info',
+              label: 'Noticias Clínicas',
+              tooltip: 'Noticias y tendencias clínicas en radiología',
+            },
+          },
+        ]);
+      }
+
+      const primaryTools = [
         'MeasurementTools',
         'SpecialMeasures',
         'Cine',
@@ -133,7 +152,11 @@ function modeFactory({ modeConfiguration }) {
         'Crosshairs',
         'ImageSliceSync',
         'MoreTools',
-      ]);
+      ];
+      if (clinicalNewsEnabled) {
+        primaryTools.push('ClinicalNewsBell');
+      }
+      toolbarService.updateSection('primary', primaryTools);
 
       toolbarService.updateSection(toolbarService.sections.viewportActionMenu.topLeft, [
         'orientationMenu',
@@ -219,7 +242,91 @@ function modeFactory({ modeConfiguration }) {
         'KiteAngle',
         'HilgenreinerAngle',
         'TonnisAngle',
+        'InsallSalvatiIndex',
       ]);
+
+      // Auto-activar sincronización de imagen cuando hay 2+ viewports reconstructables
+      const { viewportGridService, displaySetService, syncGroupService } = servicesManager.services;
+
+      const autoActivateImageSliceSync = () => {
+        const { viewports } = viewportGridService.getState();
+        const allViewports = [...viewports.values()];
+
+        const reconstructable = allViewports.filter(vp => {
+          if (!vp.displaySetInstanceUIDs?.length) {
+            return false;
+          }
+          return vp.displaySetInstanceUIDs.some(uid => {
+            const ds = displaySetService.getDisplaySetByUID(uid);
+            return ds?.isReconstructable;
+          });
+        });
+
+        if (reconstructable.length < 2) {
+          return;
+        }
+
+        const syncExists = syncGroupService.getSynchronizer('IMAGE_SLICE_SYNC');
+        if (syncExists) {
+          return;
+        }
+
+        commandsManager.runCommand('toggleSynchronizer', { type: 'imageSlice' });
+      };
+
+      const gridStateSub = viewportGridService.subscribe(
+        viewportGridService.EVENTS.GRID_STATE_CHANGED,
+        () => setTimeout(autoActivateImageSliceSync, 300)
+      );
+      _activatePanelTriggersSubscriptions.push(gridStateSub);
+
+      const viewportsReadySub = viewportGridService.subscribe(
+        viewportGridService.EVENTS.VIEWPORTS_READY,
+        () => setTimeout(autoActivateImageSliceSync, 300)
+      );
+      _activatePanelTriggersSubscriptions.push(viewportsReadySub);
+
+      // Auto-activar StackScroll en modalidades con múltiples cortes (CT, MR, PT, NM…)
+      const autoActivateStackScroll = () => {
+        if (_stackScrollActivated) return;
+
+        const { viewports } = viewportGridService.getState();
+        const hasMultiFrame = [...viewports.values()].some(vp => {
+          if (!vp.displaySetInstanceUIDs?.length) return false;
+          return vp.displaySetInstanceUIDs.some(uid => {
+            const ds = displaySetService.getDisplaySetByUID(uid);
+            return ds?.isReconstructable || (ds?.numImageFrames != null && ds.numImageFrames > 1);
+          });
+        });
+
+        if (!hasMultiFrame) return;
+
+        _stackScrollActivated = true;
+        commandsManager.runCommand('setToolActiveToolbar', {
+          toolName: 'StackScroll',
+          toolGroupIds: ['default', 'mpr', 'SRToolGroup'],
+        });
+      };
+
+      const stackScrollGridSub = viewportGridService.subscribe(
+        viewportGridService.EVENTS.GRID_STATE_CHANGED,
+        () => setTimeout(autoActivateStackScroll, 350)
+      );
+      _activatePanelTriggersSubscriptions.push(stackScrollGridSub);
+
+      const stackScrollViewportsSub = viewportGridService.subscribe(
+        viewportGridService.EVENTS.VIEWPORTS_READY,
+        () => setTimeout(autoActivateStackScroll, 350)
+      );
+      _activatePanelTriggersSubscriptions.push(stackScrollViewportsSub);
+
+      // Inicializar agente de noticias clínicas (solo si está habilitado)
+      if (clinicalNewsEnabled) {
+        const clinicalNewsService = servicesManager.services.clinicalNewsService;
+        if (clinicalNewsService) {
+          clinicalNewsService.init(servicesManager);
+        }
+      }
 
       // Precargar thumbnails para que estén listas cuando se abra el panel
       _thumbnailPreloadSub = preloadThumbnails(servicesManager, extensionManager);
@@ -342,10 +449,19 @@ function modeFactory({ modeConfiguration }) {
 
       _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
       _activatePanelTriggersSubscriptions = [];
+      _stackScrollActivated = false;
 
       if (_thumbnailPreloadSub) {
         _thumbnailPreloadSub.unsubscribe();
         _thumbnailPreloadSub = null;
+      }
+
+      // Destruir agente de noticias clínicas (solo si fue habilitado)
+      if (clinicalNewsEnabled) {
+        const clinicalNewsService = servicesManager.services.clinicalNewsService;
+        if (clinicalNewsService) {
+          clinicalNewsService.destroy();
+        }
       }
 
       uiDialogService.hideAll();
@@ -465,4 +581,4 @@ const mode = {
 };
 
 export default mode;
-export { initToolGroups, toolbarButtons };
+export { ini

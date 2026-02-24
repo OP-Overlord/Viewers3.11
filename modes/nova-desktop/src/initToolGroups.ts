@@ -75,11 +75,12 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       { toolName: 'KiteAngle' },
       { toolName: 'HilgenreinerAngle' },
       { toolName: 'TonnisAngle' },
+      { toolName: 'InsallSalvatiIndex' },
     ],
     // enabled
-    enabled: [{ toolName: toolNames.ImageOverlayViewer }],
+    enabled: [{ toolName: toolNames.ImageOverlayViewer }, { toolName: toolNames.ReferenceLines }],
     // disabled
-    disabled: [{ toolName: toolNames.ReferenceLines }, { toolName: toolNames.AdvancedMagnify }],
+    disabled: [{ toolName: toolNames.AdvancedMagnify }],
   };
 
   toolGroupService.createToolGroupAndAddTools(toolGroupId, tools);

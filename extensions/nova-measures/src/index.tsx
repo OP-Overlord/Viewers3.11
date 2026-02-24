@@ -3,6 +3,7 @@ import CardioThoracicIndexTool from './CardioThoracicIndexTool';
 import KiteAngleTool from './KiteAngleTool';
 import HilgenreinerAngleTool from './HilgenreinerAngleTool';
 import TonnisAngleTool from './TonnisAngleTool';
+import InsallSalvatiIndexTool from './InsallSalvatiIndexTool';
 import { addTool } from '@cornerstonejs/tools';
 
 /**
@@ -26,6 +27,7 @@ export default {
     addTool(KiteAngleTool);
     addTool(HilgenreinerAngleTool);
     addTool(TonnisAngleTool);
+    addTool(InsallSalvatiIndexTool);
   },
   /**
    * PanelModule should provide a list of panels that will be available in OHIF

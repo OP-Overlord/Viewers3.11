@@ -81,6 +81,20 @@ export default class TonnisAngleTool extends AnnotationTool {
     });
   }
 
+  /**
+   * Restringe el punto de segment1 para que la línea de referencia sea siempre horizontal.
+   * Copia Y y Z del otro extremo al punto movido.
+   */
+  private _constrainSegment1Horizontal(
+    worldPos: Types.Point3,
+    data: TonnisAngleData,
+    handleIndex: number
+  ): Types.Point3 {
+    const otherIndex = handleIndex === 0 ? 1 : 0;
+    const otherPoint = data.handles.segment1[otherIndex];
+    return [worldPos[0], otherPoint[1], otherPoint[2]] as Types.Point3;
+  }
+
   mouseMoveCallback = (evt: any) => {
     const { currentPoints, element } = evt.detail;
     this._currentCursorPosition = currentPoints.canvas as Types.Point2;
@@ -439,7 +453,9 @@ export default class TonnisAngleTool extends AnnotationTool {
     if (isEditingHandle && !hasDragged) {
       const { activeSegment, activeHandleIndex } = data.handles;
       if (activeSegment === 1 && activeHandleIndex !== null) {
-        data.handles.segment1[activeHandleIndex] = [...worldPos] as Types.Point3;
+        data.handles.segment1[activeHandleIndex] = this._constrainSegment1Horizontal(
+          [...worldPos] as Types.Point3, data, activeHandleIndex
+        );
       } else if (activeSegment === 2 && activeHandleIndex !== null) {
         data.handles.segment2[activeHandleIndex] = [...worldPos] as Types.Point3;
       } else if (this.editData.movingTextBox) {
@@ -471,7 +487,9 @@ export default class TonnisAngleTool extends AnnotationTool {
     // Click 4: segundo punto del segmento 2
     if (clickCount === 0) {
       // Segundo click: fija punto 2 del segmento 1
-      data.handles.segment1[1] = [...worldPos] as Types.Point3;
+      data.handles.segment1[1] = this._constrainSegment1Horizontal(
+        [...worldPos] as Types.Point3, data, 1
+      );
       this.editData.clickCount = 1;
       this.editData.currentSegment = 2;
       data.handles.activeSegment = 2;
@@ -630,7 +648,9 @@ export default class TonnisAngleTool extends AnnotationTool {
       if (isDragging) this.editData.hasDragged = true;
       const { activeSegment, activeHandleIndex } = data.handles;
       if (activeSegment === 1 && activeHandleIndex !== null) {
-        data.handles.segment1[activeHandleIndex] = [...worldPos] as Types.Point3;
+        data.handles.segment1[activeHandleIndex] = this._constrainSegment1Horizontal(
+          [...worldPos] as Types.Point3, data, activeHandleIndex
+        );
       } else if (activeSegment === 2 && activeHandleIndex !== null) {
         data.handles.segment2[activeHandleIndex] = [...worldPos] as Types.Point3;
       }
@@ -644,7 +664,9 @@ export default class TonnisAngleTool extends AnnotationTool {
 
     // Flujo de creación
     if (clickCount === 0) {
-      data.handles.segment1[1] = [...worldPos] as Types.Point3;
+      data.handles.segment1[1] = this._constrainSegment1Horizontal(
+        [...worldPos] as Types.Point3, data, 1
+      );
     } else if (clickCount === 1) {
       data.handles.segment2[0] = [...worldPos] as Types.Point3;
       data.handles.segment2[1] = [...worldPos] as Types.Point3;

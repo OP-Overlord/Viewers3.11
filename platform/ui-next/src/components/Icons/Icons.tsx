@@ -152,6 +152,7 @@ import {
   ToolKiteAngle,
   ToolHilgenreiner,
   ToolTonnis,
+  ToolInsallSalvati,
 } from './Sources/Tools';
 import ActionNewDialog from './Sources/ActionNewDialog';
 import NotificationInfo from './Sources/NotificationInfo';
@@ -698,6 +699,7 @@ export const Icons = {
   'tool-kiteangle': (props: IconProps) => ToolKiteAngle(props),
   'tool-hilgenreiner': (props: IconProps) => ToolHilgenreiner(props),
   'tool-tonnis': (props: IconProps) => ToolTonnis(props),
+  'tool-insall-salvati': (props: IconProps) => ToolInsallSalvati(props),
   'tool-3d-rotate': (props: IconProps) => Tool3DRotate(props),
   'tool-angle': (props: IconProps) => ToolAngle(props),
   'tool-annotate': (props: IconProps) => ToolAnnotate(props),

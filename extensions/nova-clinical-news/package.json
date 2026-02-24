@@ -1,0 +1,30 @@
+{
+  "name": "nova-clinical-news",
+  "version": "1.0.0",
+  "description": "Clinical News Agent - Monitors PubMed for relevant radiology articles",
+  "author": "NOVA Imaging",
+  "license": "MIT",
+  "main": "dist/nova-extension-clinical-news.umd.js",
+  "module": "src/index.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "ohif-extension"
+  ],
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack --config .webpack/webpack.dev.js --watch --output-pathinfo",
+    "build": "cross-env NODE_ENV=production webpack --config .webpack/webpack.prod.js",
+    "build:package": "yarn run build"
+  },
+  "peerDependencies": {
+    "@ohif/core": "3.11.0-beta.107",
+    "@ohif/ui-next": "3.11.0-beta.107",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.20.13"
+  }
+}

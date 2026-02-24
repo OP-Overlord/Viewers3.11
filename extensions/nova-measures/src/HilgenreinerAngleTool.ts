@@ -72,6 +72,21 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
   private _currentCursorPosition: Types.Point2 | null = null;
   private _textBoxDragOffset: Types.Point3 | null = null;
 
+  /**
+   * Fuerza que el punto del handle de la línea de Hilgenreiner mantenga
+   * la misma coordenada Y (y Z) que el otro extremo, garantizando
+   * que la línea sea siempre horizontal.
+   */
+  private _constrainHilgenreinerHorizontal(
+    worldPos: Types.Point3,
+    data: HilgenreinerData,
+    handleIndex: number
+  ): Types.Point3 {
+    const otherIndex = handleIndex === 0 ? 1 : 0;
+    const otherPoint = data.handles.hilgenreinerLine[otherIndex];
+    return [worldPos[0], otherPoint[1], otherPoint[2]] as Types.Point3;
+  }
+
   constructor(toolProps = {}, defaultToolProps = {}) {
     super(toolProps, {
       supportedInteractionTypes: ['Mouse'],
@@ -497,7 +512,9 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
     if (isEditingHandle && !hasDragged) {
       const { activeSegment, activeHandleIndex } = data.handles;
       if (activeSegment === 'H' && activeHandleIndex !== null) {
-        data.handles.hilgenreinerLine[activeHandleIndex] = [...worldPos] as Types.Point3;
+        data.handles.hilgenreinerLine[activeHandleIndex] = this._constrainHilgenreinerHorizontal(
+          [...worldPos] as Types.Point3, data, activeHandleIndex
+        );
       } else if (activeSegment === 'L' && activeHandleIndex !== null) {
         data.handles.leftAcetabularLine[activeHandleIndex] = [...worldPos] as Types.Point3;
       } else if (activeSegment === 'R' && activeHandleIndex !== null) {
@@ -532,8 +549,10 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
     // Click 5: primer punto de línea acetabular derecha
     // Click 6: segundo punto de línea acetabular derecha
     if (clickCount === 0) {
-      // Segundo click: fija punto 2 de Hilgenreiner
-      data.handles.hilgenreinerLine[1] = [...worldPos] as Types.Point3;
+      // Segundo click: fija punto 2 de Hilgenreiner (horizontal)
+      data.handles.hilgenreinerLine[1] = this._constrainHilgenreinerHorizontal(
+        [...worldPos] as Types.Point3, data, 1
+      );
       this.editData.clickCount = 1;
       this.editData.currentSegment = 'L';
       data.handles.activeSegment = 'L';
@@ -709,7 +728,9 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
       if (isDragging) this.editData.hasDragged = true;
       const { activeSegment, activeHandleIndex } = data.handles;
       if (activeSegment === 'H' && activeHandleIndex !== null) {
-        data.handles.hilgenreinerLine[activeHandleIndex] = [...worldPos] as Types.Point3;
+        data.handles.hilgenreinerLine[activeHandleIndex] = this._constrainHilgenreinerHorizontal(
+          [...worldPos] as Types.Point3, data, activeHandleIndex
+        );
       } else if (activeSegment === 'L' && activeHandleIndex !== null) {
         data.handles.leftAcetabularLine[activeHandleIndex] = [...worldPos] as Types.Point3;
       } else if (activeSegment === 'R' && activeHandleIndex !== null) {
@@ -725,7 +746,9 @@ export default class HilgenreinerAngleTool extends AnnotationTool {
 
     // Flujo de creación
     if (clickCount === 0) {
-      data.handles.hilgenreinerLine[1] = [...worldPos] as Types.Point3;
+      data.handles.hilgenreinerLine[1] = this._constrainHilgenreinerHorizontal(
+        [...worldPos] as Types.Point3, data, 1
+      );
     } else if (clickCount === 1) {
       data.handles.leftAcetabularLine[0] = [...worldPos] as Types.Point3;
       data.handles.leftAcetabularLine[1] = [...worldPos] as Types.Point3;

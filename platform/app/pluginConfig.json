@@ -73,6 +73,10 @@
     {
       "packageName": "nova-layout",
       "version": "1.0.0"
+    },
+    {
+      "packageName": "nova-clinical-news",
+      "version": "1.0.0"
     }
   ],
   "modes": [
