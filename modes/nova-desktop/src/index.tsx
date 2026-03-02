@@ -131,6 +131,7 @@ function modeFactory({ modeConfiguration }) {
             id: 'ClinicalNewsBell',
             uiType: 'nova.clinicalNewsBell',
             props: {
+              id: 'ClinicalNewsBell',
               icon: 'notifications-info',
               label: 'Noticias Clínicas',
               tooltip: 'Noticias y tendencias clínicas en radiología',
@@ -295,7 +296,7 @@ function modeFactory({ modeConfiguration }) {
           if (!vp.displaySetInstanceUIDs?.length) return false;
           return vp.displaySetInstanceUIDs.some(uid => {
             const ds = displaySetService.getDisplaySetByUID(uid);
-            return ds?.isReconstructable || (ds?.numImageFrames != null && ds.numImageFrames > 1);
+            return ds?.isReconstructable || ((ds as any)?.numImageFrames != null && (ds as any).numImageFrames > 1);
           });
         });
 
@@ -322,7 +323,7 @@ function modeFactory({ modeConfiguration }) {
 
       // Inicializar agente de noticias clínicas (solo si está habilitado)
       if (clinicalNewsEnabled) {
-        const clinicalNewsService = servicesManager.services.clinicalNewsService;
+        const clinicalNewsService = (servicesManager.services as any).clinicalNewsService;
         if (clinicalNewsService) {
           clinicalNewsService.init(servicesManager);
         }
@@ -458,7 +459,7 @@ function modeFactory({ modeConfiguration }) {
 
       // Destruir agente de noticias clínicas (solo si fue habilitado)
       if (clinicalNewsEnabled) {
-        const clinicalNewsService = servicesManager.services.clinicalNewsService;
+        const clinicalNewsService = (servicesManager.services as any).clinicalNewsService;
         if (clinicalNewsService) {
           clinicalNewsService.destroy();
         }
@@ -581,4 +582,4 @@ const mode = {
 };
 
 export default mode;
-export { ini
+export { initToolGroups, toolbarButtons };

@@ -1509,7 +1509,7 @@ export default class HangingProtocolService extends PubSubService {
     const matchingScores = [];
     let highestSeriesMatchingScore = 0;
 
-    console.log('ProtocolEngine::matchImages', studyMatchingRules, seriesMatchingRules);
+    this.debug('ProtocolEngine::matchImages', studyMatchingRules, seriesMatchingRules);
     const matchActiveOnly = this.protocol.numberOfPriorsReferenced === -1;
     this.studies.forEach((study, studyInstanceUIDsIndex) => {
       // Skip non-active if active only
@@ -1590,7 +1590,7 @@ export default class HangingProtocolService extends PubSubService {
     });
 
     if (matchingScores.length === 0) {
-      console.log('No match found', id);
+      this.debug('No match found', id);
     }
 
     // Sort the matchingScores
@@ -1609,7 +1609,7 @@ export default class HangingProtocolService extends PubSubService {
 
     const bestMatch = matchingScores[0];
 
-    console.log('ProtocolEngine::matchImages bestMatch', bestMatch, matchingScores);
+    this.debug('ProtocolEngine::matchImages bestMatch', bestMatch, matchingScores);
 
     return {
       bestMatch,

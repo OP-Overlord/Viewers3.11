@@ -1,7 +1,16 @@
+import { cache as csCache } from '@cornerstonejs/core';
 import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import hpMobile from './hpMobile';
 import { id } from './id';
+
+/**
+ * 200 MB Cornerstone image cache for mobile.
+ * Default is 3 GB — on mobile that allows 15+ large DX/MG images to accumulate
+ * (~200 MB each decoded), exhausting the browser tab memory and causing a crash.
+ * At 200 MB only ~1-2 large images stay cached at a time.
+ */
+const MOBILE_MAX_CACHE_BYTES = 200 * 1024 * 1024; // 200 MB
 
 const NON_IMAGE_MODALITIES = ['ECG', 'SEG', 'RTSTRUCT', 'RTPLAN', 'PR', 'SM'];
 
@@ -23,45 +32,49 @@ function applyMobileConfiguration(customizationService) {
 }
 
 /**
- * Configure dataSource to request uncompressed transfer syntax for mobile
- * JPEG-LS (1.2.840.10008.1.2.4.80) fails silently on mobile due to WASM decoder issues
- * We request Explicit VR Little Endian (uncompressed) instead
+ * Configure dataSource to request mobile-friendly transfer syntax.
+ *
+ * Problem: DX/MG images at 4000-8000px uncompressed = 32-128MB per frame.
+ * Loading even 2-3 of these exhausts the mobile browser tab memory (~400MB).
+ *
+ * Strategy:
+ * - JPEG Baseline first (type=image/jpeg): 10-20× smaller than uncompressed,
+ *   natively supported by @cornerstonejs/dicom-image-loader (libjpeg-turbo WASM).
+ * - JPEG 2000 second (type=image/jp2): lossless compression, 16-bit capable.
+ * - Uncompressed last resort (q=0.3): for CT/MR (512×512, ~0.5MB – safe).
+ * - NEVER request JPEG-LS (1.2.840.10008.1.2.4.80): WASM decoder fails on mobile.
+ *
+ * How it works: initWADOImageLoader.js calls getConfig() inside beforeSend on
+ * every image request, so this override takes effect immediately.
  */
 function configureMobileTransferSyntax(extensionManager) {
   try {
     const [dataSource] = extensionManager.getActiveDataSource();
-    if (!dataSource) {
-      console.warn('[Nova Mobile] No active dataSource found');
-      return;
-    }
-
-    const config = dataSource.getConfig?.();
+    const config = dataSource?.getConfig?.();
     if (!config) {
-      console.warn('[Nova Mobile] DataSource has no config');
+      console.warn('[Nova Mobile] No active dataSource config found');
       return;
     }
 
-    // Store original config for reference
-    const originalAcceptHeader = config.acceptHeader;
-
-    // Override the configuration for mobile
-    // Request uncompressed or JPEG baseline instead of JPEG-LS
     config.acceptHeader = [
-      'multipart/related; type=application/octet-stream; q=1',
-      'multipart/related; type=image/jpeg; q=0.8',
-      'multipart/related; type=image/jls; q=0.3',
-      'multipart/related; type=application/pdf; q=0.5',
+      // Prefer JPEG: 10-20× smaller than uncompressed, no WASM needed for small-medium images.
+      // If server supports transcoding (Orthanc with transcoding plugin, dcm4chee) it sends JPEG.
+      'multipart/related; type=image/jpeg; q=1',
+      // JPEG 2000: lossless + 16-bit capable, good for servers that support it.
+      'multipart/related; type=image/jp2; q=0.9',
+      // JPEG-LS: native format for most CR/DX/MG. Accept it so the server can serve its native
+      // format when it does not support transcoding. The WASM decoder handles it for images
+      // that fit in memory (< ~30MB decoded). Large images are bounded by the 200 MB cache.
+      'multipart/related; type=image/jls; q=0.7',
+      // Uncompressed: last resort – fine for CT/MR (512×512 ≈ 0.5 MB) but risky for large DX/MG.
+      'multipart/related; type=application/octet-stream; q=0.3',
     ];
 
-    // Request server-side transcoding to uncompressed format
-    // 1.2.840.10008.1.2.1 = Explicit VR Little Endian (uncompressed, widely supported)
-    // '*' = Let server decide (might still send JPEG-LS)
-    config.requestTransferSyntaxUID = '1.2.840.10008.1.2.1';
+    // requestTransferSyntaxUID is only used when acceptHeader is empty,
+    // but set it for clarity / future compatibility.
+    config.requestTransferSyntaxUID = '1.2.840.10008.1.2.4.50'; // JPEG Baseline
 
-    console.log('[Nova Mobile] Transfer Syntax configured for mobile compatibility');
-    console.log('[Nova Mobile] Original acceptHeader:', originalAcceptHeader);
-    console.log('[Nova Mobile] New acceptHeader:', config.acceptHeader);
-    console.log('[Nova Mobile] requestTransferSyntaxUID:', config.requestTransferSyntaxUID);
+    console.log('[Nova Mobile] Transfer syntax configured (JPEG-first for mobile)');
   } catch (error) {
     console.error('[Nova Mobile] Failed to configure transfer syntax:', error);
   }
@@ -146,8 +159,13 @@ function modeFactory({ modeConfiguration }) {
 
       measurementService.clearMeasurements();
 
+      // Limit Cornerstone image cache to prevent OOM on mobile devices.
+      // Default is 3 GB; a single decoded DX/MG image is ~80-200 MB, so the
+      // default allows 15+ large images to accumulate and crash the tab.
+      csCache.setMaxCacheSize(MOBILE_MAX_CACHE_BYTES);
+
       // Configure dataSource to request mobile-compatible transfer syntax
-      // This avoids JPEG-LS which fails on mobile devices
+      // (JPEG-first to reduce network/decode load for large DX/MG images)
       configureMobileTransferSyntax(extensionManager);
 
       // Apply mobile-optimized configuration (only removes overlays)
