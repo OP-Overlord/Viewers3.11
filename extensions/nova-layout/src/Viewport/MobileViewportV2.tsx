@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Enums, eventTarget, cache as csCache, getRenderingEngine } from '@cornerstonejs/core';
+import { Enums, eventTarget, cache as csCache, getRenderingEngine, metaData } from '@cornerstonejs/core';
 import { useViewportRef, useSystem } from '@ohif/core';
 import { setEnabledElement } from '@ohif/extension-cornerstone';
 
@@ -14,6 +14,29 @@ const LARGE_IMAGE_MODALITIES = new Set(['DX', 'CR', 'MG', 'RX', 'DR']);
 
 // Cache WebGL max texture size once per session
 let cachedMaxTextureSize: number | null = null;
+
+// ── Metadata override provider ─────────────────────────────────────────────
+// Cornerstone3D reads bitsAllocated from metaData.get('imagePixelModule', imageId)
+// (NOT from the image object) to determine the VTK scalar type:
+//   bitsAllocated=16 → UNSIGNED_SHORT → R16UI texture → black on mobile WebGL
+//   bitsAllocated=8  → UNSIGNED_CHAR  → R8 texture    → renders correctly
+// After we convert pixel data to Uint8Array, we must override the metadata
+// provider so Cornerstone creates an R8 texture instead of R16UI.
+const imagePixelModuleOverrides = new Map<string, Record<string, unknown>>();
+let _metadataProviderRegistered = false;
+
+function ensureMetadataOverrideProvider() {
+  if (_metadataProviderRegistered) return;
+  _metadataProviderRegistered = true;
+  // Priority 10000 → checked before Cornerstone's default providers (priority ~0)
+  metaData.addProvider((type: string, imageId: string) => {
+    if (type === 'imagePixelModule') {
+      const override = imagePixelModuleOverrides.get(imageId);
+      if (override) return override;
+    }
+    return undefined;
+  }, 10000);
+}
 
 function getMaxTextureSize(): number {
   if (cachedMaxTextureSize !== null) return cachedMaxTextureSize;
@@ -63,21 +86,37 @@ function detectLargeImages(displaySets: AppTypes.DisplaySet[]): boolean {
 async function downsampleCachedImage(imageId: string): Promise<boolean> {
   const maxDim = getMaxTextureSize();
   const imageLoadObj = csCache.getImageLoadObject(imageId);
-  if (!imageLoadObj) return false;
+  if (!imageLoadObj) {
+    console.log(`${LOG_PREFIX} ⏭️ downsample SKIP (no en caché): ...${imageId.slice(-30)}`);
+    return false;
+  }
 
   let image: any;
   try {
     image = await imageLoadObj.promise;
   } catch (_e) {
+    console.log(`${LOG_PREFIX} ⏭️ downsample SKIP (promise rechazada): ...${imageId.slice(-30)}`);
     return false;
   }
 
   const { width, height } = image;
-  if (!width || !height || (width <= maxDim && height <= maxDim)) return false;
+  if (!width || !height || (width <= maxDim && height <= maxDim)) {
+    console.log(
+      `${LOG_PREFIX} ⏭️ downsample SKIP (${width ?? '?'}×${height ?? '?'} ≤ maxDim=${maxDim}):` +
+        ` ...${imageId.slice(-30)}`
+    );
+    return false;
+  }
 
   const scale = Math.min(maxDim / width, maxDim / height);
   const newWidth = Math.max(1, Math.floor(width * scale));
   const newHeight = Math.max(1, Math.floor(height * scale));
+  console.log(
+    `${LOG_PREFIX} 📐 Downsample plan: ${width}×${height} → ${newWidth}×${newHeight}` +
+      ` scale=${scale.toFixed(3)}` +
+      ` AR_orig=${(width / height).toFixed(3)} AR_new=${(newWidth / newHeight).toFixed(3)}` +
+      ` tipo=${(image.getPixelData?.() ?? image.pixelData)?.constructor?.name ?? '?'}`
+  );
 
   const t0 = performance.now();
   try {
@@ -149,10 +188,32 @@ async function downsampleCachedImage(imageId: string): Promise<boolean> {
     image.maxPixelValue = 255;
     image.getPixelData = () => newPixelData;
     image.pixelData = newPixelData;
+    // Mismo parche que convertTo8bitInCache: voxelManager.getScalarData debe
+    // retornar Uint8Array para forzar slow path en _updateActorToDisplayImageId.
+    if (image.voxelManager && typeof image.voxelManager.getScalarData === 'function') {
+      image.voxelManager.getScalarData = () => newPixelData;
+    }
     // Patch window metadata to 8-bit range so Cornerstone's _getInitialVOIRange
     // uses correct values after setStack re-reads this image from cache.
     if (image.windowWidth !== undefined) image.windowWidth = 256;
     if (image.windowCenter !== undefined) image.windowCenter = 128;
+    // CRÍTICO: igual que convertTo8bitInCache — parchear BitsAllocated para que
+    // Cornerstone cree textura UNSIGNED_CHAR (R8) en lugar de UNSIGNED_SHORT (R16UI).
+    image.BitsAllocated = 8;
+    image.BitsStored = 8;
+    image.HighBit = 7;
+    // Cornerstone lee bitsAllocated del metadata provider, NO del objeto imagen.
+    // Sobrescribir el provider para que VTK cree textura R8 (no R16UI).
+    const origMetaDs = metaData.get('imagePixelModule', imageId) ?? {};
+    imagePixelModuleOverrides.set(imageId, {
+      ...origMetaDs,
+      bitsAllocated: 8,
+      bitsStored: 8,
+      highBit: 7,
+      pixelRepresentation: 0,
+    });
+    ensureMetadataOverrideProvider();
+    console.log(`${LOG_PREFIX} 🔬 Metadata override (downsample) registrado: bitsAllocated 16→8 ...${imageId.slice(-30)}`);
 
     console.warn(
       `${LOG_PREFIX} 🔍 Downsample completado: ${width}×${height} → ${newWidth}×${newHeight}` +
@@ -196,11 +257,26 @@ async function convertTo8bitInCache(imageId: string): Promise<boolean> {
   }
 
   const pixelData = img.getPixelData?.() ?? img.pixelData;
-  if (!pixelData) return false;
+  if (!pixelData) {
+    console.log(`${LOG_PREFIX} 🔄 convertTo8bit SKIP (sin pixelData): ...${imageId.slice(-30)}`);
+    return false;
+  }
 
   // Solo convertir si realmente es 16-bit (Uint16Array o Int16Array)
   const is16bit = pixelData instanceof Uint16Array || pixelData instanceof Int16Array;
-  if (!is16bit) return false; // Ya es 8-bit (convertido previamente o por downsample)
+  console.log(
+    `${LOG_PREFIX} 🔄 convertTo8bit ENTER: tipo=${pixelData.constructor.name}` +
+      ` is16bit=${is16bit}  ${img.width}×${img.height}  wc=${img.windowCenter} ww=${img.windowWidth}` +
+      `  minPx=${img.minPixelValue} maxPx=${img.maxPixelValue}` +
+      `  ...${imageId.slice(-30)}`
+  );
+  if (!is16bit) {
+    console.log(
+      `${LOG_PREFIX} 🔄 convertTo8bit SKIP (ya es 8-bit, tipo=${pixelData.constructor.name}):` +
+        ` ...${imageId.slice(-30)}`
+    );
+    return false; // Ya es 8-bit (convertido previamente o por downsample)
+  }
 
   // Determinar ventana de conversión: usar wc/ww del DICOM para conservar la
   // intención diagnóstica del radiólogo que adquirió la imagen.
@@ -231,6 +307,20 @@ async function convertTo8bitInCache(imageId: string): Promise<boolean> {
   // Parchear la imagen cacheada in-place: WebGL leerá Uint8Array → 8-bit texture
   img.getPixelData = () => uint8;
   img.pixelData = uint8;
+  // CRÍTICO: Cornerstone3D usa image.voxelManager.getScalarData() para:
+  //   1) isDataTypeMatching check: 'Uint16Array' === voxelManager.getScalarData().constructor.name
+  //      Si voxelManager retorna Uint16Array → isDataTypeMatching=true → fast path
+  //      (solo copia datos en actor existente sin recrear VTK) → textura sigue R16UI → negro.
+  //   2) pixelArray en _createVTKImageData (slow path, cuando isDataTypeMatching=false)
+  //   Con voxelManager retornando Uint8Array → isDataTypeMatching=false → slow path
+  //   → VTK actor recreado con UNSIGNED_CHAR (R8 texture) → imagen visible en mobile.
+  //   Cornerstone mismo usa esta técnica en StackViewport línea ~1312.
+  if (img.voxelManager && typeof img.voxelManager.getScalarData === 'function') {
+    img.voxelManager.getScalarData = () => uint8;
+    console.log(`${LOG_PREFIX} 🔬 voxelManager.getScalarData patched → Uint8Array (forzará slow path VTK)`);
+  } else {
+    console.warn(`${LOG_PREFIX} ⚠️ voxelManager no disponible — isDataTypeMatching tomará fast path con Uint16Array`);
+  }
   img.minPixelValue = 0;
   img.maxPixelValue = 255;
   img.sizeInBytes = pixelData.length; // 1 byte/pixel ahora
@@ -238,11 +328,42 @@ async function convertTo8bitInCache(imageId: string): Promise<boolean> {
   // y establecerá voiRange=[0,256] → correcto para 8-bit
   img.windowCenter = 128;
   img.windowWidth = 256;
+  // CRÍTICO: Cornerstone3D usa BitsAllocated/BitsStored para determinar el tipo VTK
+  // (UNSIGNED_CHAR vs UNSIGNED_SHORT). Si quedan en 16, crea textura R16UI aunque
+  // getPixelData() retorne Uint8Array → imagen negra en GPU.
+  img.BitsAllocated = 8;
+  img.BitsStored = 8;
+  img.HighBit = 7;
+  // Cornerstone lee bitsAllocated del metadata PROVIDER (metaData.get), NO del
+  // objeto img. Registrar override de alta prioridad para que setStack cree
+  // textura R8 (UNSIGNED_CHAR) en lugar de R16UI (UNSIGNED_SHORT).
+  const origMeta = metaData.get('imagePixelModule', imageId) ?? {};
+  imagePixelModuleOverrides.set(imageId, {
+    ...origMeta,
+    bitsAllocated: 8,
+    bitsStored: 8,
+    highBit: 7,
+    pixelRepresentation: 0,
+  });
+  ensureMetadataOverrideProvider();
+  console.log(`${LOG_PREFIX} 🔬 Metadata override registrado: bitsAllocated 16→8 ...${imageId.slice(-30)}`);
 
+  // Estadísticas del uint8 resultante (muestreo rápido)
+  let u8min = 255, u8max = 0, u8sum = 0;
+  const u8step = Math.max(1, Math.floor(uint8.length / 5000));
+  for (let i = 0; i < uint8.length; i += u8step) {
+    const v = uint8[i];
+    if (v < u8min) u8min = v;
+    if (v > u8max) u8max = v;
+    u8sum += v;
+  }
+  const u8mean = (u8sum / (uint8.length / u8step)).toFixed(1);
   console.warn(
-    `${LOG_PREFIX} 🔄 16-bit→8-bit (mobile WebGL compat):` +
+    `${LOG_PREFIX} 🔄 16-bit→8-bit OK (mobile WebGL compat):` +
       ` ${img.width}×${img.height}  wc=${wc.toFixed(0)} ww=${ww.toFixed(0)}` +
-      ` → ventana=[${lo.toFixed(0)}, ${hi.toFixed(0)}]`
+      ` ventana=[${lo.toFixed(0)}, ${hi.toFixed(0)}]` +
+      ` → u8 range=[${u8min},${u8max}] media=${u8mean}` +
+      ` (si range=[0,0] → todos los píxeles fuera de ventana → imagen negra)`
   );
   return true;
 }
@@ -601,7 +722,14 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     //
     // Retorna Promise para poder hacer await antes del renderViewport final.
     const applyVOIFixFromCache = async (imageId: string, vp: any): Promise<void> => {
-      if (!hasLargeModalityRef.current || !vp?.setProperties) return;
+      if (!hasLargeModalityRef.current || !vp?.setProperties) {
+        console.log(
+          `${LOG_PREFIX} 🔬 applyVOIFix SKIP (hasLargeModality=${hasLargeModalityRef.current}` +
+            ` setProperties=${!!vp?.setProperties}) [${viewportId}]`
+        );
+        return;
+      }
+      console.log(`${LOG_PREFIX} 🔬 applyVOIFix ENTER [${viewportId}] imageId=...${imageId.slice(-30)}`);
       const loadObj = csCache.getImageLoadObject(imageId);
       if (!loadObj) return;
 
@@ -643,6 +771,11 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
       console.log(`slope/intercept:  ${img.slope} / ${img.intercept}`);
       console.log(`invert:           ${img.invert}`);
       console.log(`color:            ${img.color}`);
+      // BitsAllocated/BitsStored: Cornerstone3D usa estos para decidir el formato VTK (R8 vs R16UI).
+      // Si BitsAllocated=16 y pixelData es Uint8Array (post-conversión), la textura puede ser
+      // subida como R16UI igualmente → imagen negra aunque el cache esté correcto.
+      console.log(`BitsAllocated:    ${img.BitsAllocated ?? '—'}  BitsStored=${img.BitsStored ?? '—'}  HighBit=${img.HighBit ?? '—'}`);
+      console.log(`imageId:          ...${(img.imageId ?? '').slice(-40)}`);
       console.log(`viewport voiRange actual: [${currentVoi?.lower ?? '—'}, ${currentVoi?.upper ?? '—'}]`);
       console.groupEnd();
 
@@ -653,6 +786,10 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
         //   a) Overridea el auto-windowing de Cornerstone (que puede ser mejor que DICOM)
         //   b) Cualquier setProperties extra genera renders adicionales que corrompen estado
         // → No tocar el VOI para datos nativos 16-bit.
+        console.log(
+          `${LOG_PREFIX} 🔬 applyVOIFix SKIP (datos 16-bit, tipo=${pixelData.constructor.name})` +
+            ` → Cornerstone usará wc=${img.windowCenter}/ww=${img.windowWidth} del DICOM [${viewportId}]`
+        );
         return;
       }
 
@@ -662,11 +799,21 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
       const lo = 0;
       const hi = 255;
 
+      const voiPre = vp.getProperties?.()?.voiRange;
       vp.setProperties({ voiRange: { lower: lo, upper: hi } });
+      const voiPost = vp.getProperties?.()?.voiRange;
       console.log(
-        `${LOG_PREFIX} 🔧 VOI corregido [${viewportId}]: [${lo}, ${hi}]` +
-          ` (JPEG 8-bit vs metadatos ${img.windowCenter}/${img.windowWidth})`
+        `${LOG_PREFIX} 🔧 VOI corregido [${viewportId}]:` +
+          ` antes=[${voiPre?.lower ?? '—'},${voiPre?.upper ?? '—'}]` +
+          ` → ahora=[${voiPost?.lower?.toFixed(0) ?? '—'},${voiPost?.upper?.toFixed(0) ?? '—'}]` +
+          ` (JPEG 8-bit vs metadatos wc=${img.windowCenter}/ww=${img.windowWidth})`
       );
+      if (voiPost?.lower == null) {
+        console.warn(
+          `${LOG_PREFIX} ⚠️ setProperties voiRange no persistió → el viewport puede ignorarlo` +
+            ` (¿otro render override inmediato?) [${viewportId}]`
+        );
+      }
     };
 
     // 1. Imagen decodificada con éxito (global, cualquier imageId).
@@ -677,7 +824,23 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     const handleImageLoaded = (evt: any) => {
       // Cornerstone3D IMAGE_LOADED usa evt.detail.image.imageId, no evt.detail.imageId
       const id: string = evt.detail?.image?.imageId ?? evt.detail?.imageId ?? '';
-      console.log(`${LOG_PREFIX} ✅ IMAGE_LOADED [${viewportId}] imageId=...${id.slice(-40)}`);
+      const inTargetSet = !!(id && targetImageIdsRef.current?.has(id));
+      const targetSetSize = targetImageIdsRef.current?.size ?? -1; // -1 = ref todavía null (race condition)
+      console.log(
+        `${LOG_PREFIX} ✅ IMAGE_LOADED [${viewportId}]` +
+          ` inTargetSet=${inTargetSet} targetSetSize=${targetSetSize}` +
+          ` imageId=...${id.slice(-40)}`
+      );
+      if (!inTargetSet && targetSetSize === -1) {
+        console.warn(
+          `${LOG_PREFIX} ⚠️ IMAGE_LOADED llegó ANTES de que loadViewportData estableciera` +
+            ` targetImageIdsRef (race condition). La imagen NO será procesada.`
+        );
+      } else if (!inTargetSet && id) {
+        console.log(
+          `${LOG_PREFIX} ℹ️ IMAGE_LOADED ignorado (ya procesado o es de otro viewport) [${viewportId}]`
+        );
+      }
 
       if (id && targetImageIdsRef.current?.has(id)) {
         // GUARD SINCRÓNICO: eliminar imageId del set ANTES de iniciar cualquier operación
@@ -709,6 +872,13 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
           }
 
           const wasDownsampled = wasGeometricDownsample || wasPixelConverted;
+          console.log(
+            `${LOG_PREFIX} 🔍 Pipeline parche [${viewportId}]:` +
+              ` wasGeometricDownsample=${wasGeometricDownsample}` +
+              ` wasPixelConverted=${wasPixelConverted}` +
+              ` wasDownsampled=${wasDownsampled}` +
+              ` hasLargeModality=${hasLargeModalityRef.current}`
+          );
 
           if (wasDownsampled) {
             // La imagen en cache fue parcheada (geometría y/o tipo de pixel).
@@ -718,20 +888,157 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
             const imageIds: string[] = viewport?.getImageIds?.() ?? [];
             const currentIdx: number = viewport?.getCurrentImageIdIndex?.() ?? 0;
             const isCurrentImage = id !== '' && (imageIds[currentIdx] ?? '') === id;
+            console.log(
+              `${LOG_PREFIX} 🔍 isCurrentImage check [${viewportId}]:` +
+                ` isCurrentImage=${isCurrentImage}` +
+                ` currentIdx=${currentIdx}` +
+                ` imageIds.length=${imageIds.length}` +
+                ` currentId=...${(imageIds[currentIdx] ?? '').slice(-30)}` +
+                ` loadedId=...${id.slice(-30)}`
+            );
 
             if (isCurrentImage && viewport?.setStack && imageIds.length > 0) {
+              let setStackOk = false;
               try {
                 const patchType = wasGeometricDownsample ? 'downsample' : '16→8bit';
                 console.log(`${LOG_PREFIX} 🔄 Re-stack (${patchType}) [${viewportId}]`);
                 await viewport.setStack(imageIds, currentIdx);
+                setStackOk = true;
+                console.log(`${LOG_PREFIX} ✅ setStack completado [${viewportId}]`);
               } catch (_e) {
-                // si setStack falla, caemos al renderViewport de abajo
+                // Si setStack falla, la textura en GPU sigue siendo la original (16-bit → negra)
+                console.error(
+                  `${LOG_PREFIX} ❌ setStack FALLÓ [${viewportId}] — la textura GPU puede seguir siendo 16-bit:`,
+                  _e
+                );
               }
+
+              // Re-fetch viewport: setStack puede recrear internamente el objeto viewport;
+              // usar la referencia pre-setStack puede ser stale → setProperties ignorado.
+              const freshViewport = re.getViewport(viewportId) as any;
+              const activeViewport = freshViewport ?? viewport;
+              console.log(
+                `${LOG_PREFIX} 🔍 Viewport post-setStack [${viewportId}]:` +
+                  ` setStackOk=${setStackOk}` +
+                  ` freshViewport=${!!freshViewport}` +
+                  ` setProperties=${!!activeViewport?.setProperties}`
+              );
+
+              // ── Diagnóstico VTK actor post-setStack ────────────────────────────
+              // HIPÓTESIS PRINCIPAL: Cornerstone3D puede crear el VTK actor con formato R16UI
+              // si BitsAllocated=16, aunque getPixelData() retorne Uint8Array.
+              // La textura GPU quedaría en formato 16-bit → imagen negra aunque voiRange sea [0,255].
+              try {
+                const vtkImg = activeViewport?.getImageData?.();
+                const scalars = vtkImg?.imageData?.getPointData?.()?.getScalars?.();
+                const vtkData = scalars?.getData?.();
+                const vtkDataType = scalars?.getDataType?.() ?? '—';
+                const vtkArrType = vtkData?.constructor?.name ?? '—';
+                const first3 = vtkData ? Array.from((vtkData as any).slice(0, 3)).join(',') : '—';
+                console.log(
+                  `${LOG_PREFIX} 🔬 VTK actor post-setStack [${viewportId}]:` +
+                    ` dataType=${vtkDataType} arrType=${vtkArrType} first3=[${first3}]`
+                );
+                if (vtkArrType === 'Uint16Array') {
+                  console.error(
+                    `${LOG_PREFIX} ❌ VTK actor tiene Uint16Array — Cornerstone NO releyó el Uint8Array del cache.` +
+                      ` Probablemente usa BitsAllocated para crear el VTK ImageData, ignorando el tipo real` +
+                      ` de getPixelData(). Fix: también parchear img.BitsAllocated=8, img.BitsStored=8, img.HighBit=7`
+                  );
+                } else if (vtkArrType === 'Uint8Array') {
+                  console.log(
+                    `${LOG_PREFIX} ✅ VTK actor tiene Uint8Array → formato GPU correcto.` +
+                      ` Si el canvas sigue negro, es preserveDrawingBuffer=false (falso positivo)`
+                  );
+                } else {
+                  console.warn(
+                    `${LOG_PREFIX} ⚠️ VTK actor tipo desconocido (${vtkArrType}) — no se puede determinar formato GPU`
+                  );
+                }
+              } catch (_vtkErr) {
+                console.log(`${LOG_PREFIX} 🔬 No se pudo inspeccionar VTK actor: ${_vtkErr}`);
+              }
+
               // VOI fix después de setStack: setStack resetea voiRange a null.
               // Para 8-bit (post-conversión): applyVOIFixFromCache detecta Uint8Array → [0,255]
-              await applyVOIFixFromCache(id, viewport);
+              await applyVOIFixFromCache(id, activeViewport);
+
+              // Para modalidades grandes (MG/DX/CR): resetCamera después de setStack porque
+              // las dimensiones de la imagen cambiaron (downsample/conversión). Sin resetCamera
+              // la cámara sigue configurada para las dimensiones originales → imagen distorsionada
+              // o descentrada. Esto es la causa más probable de la distorsión en mamografías.
+              if (hasLargeModalityRef.current && activeViewport?.resetCamera) {
+                activeViewport.resetCamera();
+                const camPost = activeViewport?.getCamera?.();
+                console.log(
+                  `${LOG_PREFIX} 📷 resetCamera post-setStack [${viewportId}]` +
+                    ` parallelScale=${camPost?.parallelScale?.toFixed(2) ?? '?'}` +
+                    ` pos=${JSON.stringify(camPost?.position?.map((v: number) => +v.toFixed(0)) ?? [])}`
+                );
+              } else {
+                const camCurr = activeViewport?.getCamera?.();
+                console.log(
+                  `${LOG_PREFIX} 📷 Camera post-setStack SIN resetCamera [${viewportId}]` +
+                    ` parallelScale=${camCurr?.parallelScale?.toFixed(2) ?? '?'}` +
+                    ` (hasLargeModality=${hasLargeModalityRef.current})`
+                );
+              }
+
               re.renderViewport(viewportId);
               console.log(`${LOG_PREFIX} 🔄 Post-load render kick [${viewportId}]`);
+
+              // ── Canvas sampling POST-conversión ─────────────────────────────
+              // Esperar dos frames para que el render termine y el buffer esté listo.
+              // Este es el diagnóstico definitivo: si sigue negro aquí, setStack/voiRange
+              // no surtieron efecto a nivel GPU.
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  if (!isMountedRef.current) return;
+                  const canvasAfter = element.querySelector('canvas') as HTMLCanvasElement | null;
+                  if (canvasAfter && canvasAfter.width > 0) {
+                    try {
+                      const cx = Math.floor(canvasAfter.width / 2);
+                      const cy = Math.floor(canvasAfter.height / 2);
+                      const tmp = document.createElement('canvas');
+                      tmp.width = 1;
+                      tmp.height = 1;
+                      const ctx = tmp.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(canvasAfter, cx, cy, 1, 1, 0, 0, 1, 1);
+                        const px = ctx.getImageData(0, 0, 1, 1).data;
+                        const finalVoi = activeViewport?.getProperties?.()?.voiRange;
+                        const isBlack = px[0] === 0 && px[1] === 0 && px[2] === 0;
+                        console.log(
+                          `${LOG_PREFIX} 🎨 Canvas POST-conversión [${viewportId}]:` +
+                            ` R=${px[0]} G=${px[1]} B=${px[2]} A=${px[3]}` +
+                            ` voiRange=[${finalVoi?.lower?.toFixed(0) ?? '—'},${finalVoi?.upper?.toFixed(0) ?? '—'}]`
+                        );
+                        if (isBlack) {
+                          // Verificar si preserveDrawingBuffer=false es el motivo del falso positivo
+                          let preserveDB: boolean | undefined;
+                          try {
+                            const glCtx = canvasAfter.getContext('webgl2') ?? canvasAfter.getContext('webgl');
+                            preserveDB = glCtx?.getContextAttributes?.()?.preserveDrawingBuffer;
+                          } catch (_g) { /* ignore */ }
+                          console.error(
+                            `${LOG_PREFIX} ❌ SIGUE NEGRO después de conversión 8-bit + setStack + renderViewport.` +
+                              ` setStackOk=${setStackOk} voiRange=${finalVoi ? JSON.stringify(finalVoi) : 'null'}` +
+                              ` preserveDrawingBuffer=${preserveDB}` +
+                              ` — si preserveDB=false el canvas read es falso positivo y la imagen SÍ se ve.` +
+                              ` Si preserveDB=true → bug real de textura GPU (VTK actor con Uint16Array?)`
+                          );
+                        } else {
+                          console.log(
+                            `${LOG_PREFIX} ✅ Canvas POST-conversión VISIBLE (R=${px[0]}) → imagen correcta [${viewportId}]`
+                          );
+                        }
+                      }
+                    } catch (_e) {
+                      console.log(`${LOG_PREFIX} 🎨 No se pudo muestrear canvas post-conversión: ${_e}`);
+                    }
+                  }
+                });
+              });
             } else {
               // Imagen no-actual: el parche en cache es suficiente. Se aplicará
               // cuando el usuario navegue a este frame (setStack/loadImage lo re-leerá).
@@ -827,10 +1134,18 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
                   `  canvas=${canvas.width}×${canvas.height}`
               );
               if (px[0] === 0 && px[1] === 0 && px[2] === 0) {
-                console.warn(
-                  `${LOG_PREFIX} ⚠️ Pixel central es (0,0,0) → canvas completamente negro.` +
-                    ` Puede ser preserveDrawingBuffer=false (falso positivo) o bug real de render.`
-                );
+                if (hasLargeModalityRef.current) {
+                  console.warn(
+                    `${LOG_PREFIX} ⚠️ status=ready activado con canvas NEGRO en modalidad grande [${viewportId}].` +
+                      ` La textura 16-bit se renderizó antes de que IMAGE_LOADED pudiera convertirla.` +
+                      ` El usuario verá negro hasta que setStack+renderViewport completen (async).`
+                  );
+                } else {
+                  console.warn(
+                    `${LOG_PREFIX} ⚠️ Pixel central es (0,0,0) → canvas completamente negro.` +
+                      ` Puede ser preserveDrawingBuffer=false (falso positivo) o bug real de render.`
+                  );
+                }
               }
             }
           } catch (samplingErr) {
