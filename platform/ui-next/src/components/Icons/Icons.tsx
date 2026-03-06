@@ -236,6 +236,8 @@ import ArrowRight from './Sources/ArrowRight';
 import ChevronLeft from './Sources/ChevronLeft';
 import StatusAlert from './Sources/StatusAlert';
 import Undo from './Sources/Undo';
+import TabContours from './Sources/TabContours';
+import IllustrationNotFound from './Sources/IllustrationNotFound';
 //
 //
 type IconProps = React.HTMLAttributes<SVGElement>;
@@ -683,6 +685,8 @@ export const Icons = {
   'status-tracked': (props: IconProps) => StatusTracking(props),
   'status-untracked': (props: IconProps) => StatusUntracked(props),
   'status-locked': (props: IconProps) => StatusLocked(props),
+  'tab-contours': (props: IconProps) => TabContours(props),
+  TabContours: (props: IconProps) => TabContours(props),
   'tab-segmentation': (props: IconProps) => TabSegmentation(props),
   'tab-studies': (props: IconProps) => TabStudies(props),
   'tab-linear': (props: IconProps) => TabLinear(props),
@@ -736,6 +740,7 @@ export const Icons = {
   'tool-referenceLines': (props: IconProps) => ToolReferenceLines(props),
   'tool-reset': (props: IconProps) => ToolReset(props),
   'tool-rotate-right': (props: IconProps) => ToolRotateRight(props),
+  'icon-tool-sculptor': (props: IconProps) => ToolSculptor(props),
   'tool-seg-brush': (props: IconProps) => ToolSegBrush(props),
   'tool-seg-eraser': (props: IconProps) => ToolSegEraser(props),
   'tool-seg-shape': (props: IconProps) => ToolSegShape(props),
@@ -748,6 +753,7 @@ export const Icons = {
   'tool-window-level': (props: IconProps) => ToolWindowLevel(props),
   'tool-window-level-nova': (props: IconProps) => ToolWindowLevelNOVA(props),
   'tool-window-region': (props: IconProps) => ToolWindowRegion(props),
+  'tool-segment-label': (props: IconProps) => ToolSegmentLabel(props),
   'icon-tool-window-region': (props: IconProps) => ToolWindowRegion(props),
   'icon-tool-ultrasound-bidirectional': (props: IconProps) => ToolUltrasoundBidirectional(props),
   'icon-tool-cobb-angle': (props: IconProps) => ToolCobbAngle(props),
@@ -791,6 +797,7 @@ export const Icons = {
   'old-trash': (props: IconProps) => Trash(props),
   'tool-point': (props: IconProps) => ToolCircle(props),
   'tool-freehand-line': (props: IconProps) => ToolFreehand(props),
+  'tool-labelmap-edit-with-contour': (props: IconProps) => ToolLabelmapEditWithContour(props),
   'actions-smooth': (props: IconProps) => ActionsSmooth(props),
   'actions-simplify': (props: IconProps) => ActionsSimplify(props),
   'actions-combine': (props: IconProps) => ActionsCombine(props),
@@ -807,6 +814,7 @@ export const Icons = {
   Undo,
   Redo,
   JumpToSlice,
+  IllustrationNotFound,
 
   /** Adds an icon to the set of icons */
   addIcon: (name: string, icon) => {

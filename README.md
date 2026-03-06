@@ -49,11 +49,12 @@ provided by the <a href="https://ohif.org/">Open Health Imaging Foundation (OHIF
 | <img src="https://github.com/OHIF/Viewers/blob/master/platform/docs/docs/assets/img/demo-4d.webp?raw=true" alt="4D" width="350"/> | 4D  | [Demo](https://viewer.ohif.org/dynamic-volume?StudyInstanceUIDs=2.25.232704420736447710317909004159492840763) |
 | <img src="https://github.com/OHIF/Viewers/blob/master/platform/docs/docs/assets/img/demo-video.webp?raw=true" alt="VIDEO" width="350"/> | Video  | [Demo](https://viewer.ohif.org/viewer?StudyInstanceUIDs=2.25.96975534054447904995905761963464388233) |
 | <img src="https://github.com/OHIF/Viewers/blob/master/platform/docs/docs/assets/img/microscopy.webp?raw=true" alt="microscopy" width="350"/> | Slide Microscopy  | [Demo](https://viewer.ohif.org/microscopy?StudyInstanceUIDs=2.25.141277760791347900862109212450152067508) |
+| <img src="https://github.com/OHIF/Viewers/blob/master/platform/docs/docs/assets/img/demo-ecg.webp?raw=true" alt="ECG" width="350"/> | ECG Waveform  | [Demo](https://viewer-dev.ohif.org/viewer?StudyInstanceUIDs=2.25.209974489360710696739324151261716440238) |
 
 ## About
 
 The OHIF Viewer can retrieve
-and load images from most sources and formats; render sets in 2D, 3D, and
+and load images from most sources and formats, render sets in 2D, 3D, and
 reconstructed representations; allows for the manipulation, annotation, and
 serialization of observations; supports internationalization, OpenID Connect,
 offline use, hotkeys, and many more features.
@@ -76,7 +77,7 @@ contributions of individuals, research groups, and commercial organizations.
 After more than 8-years of integrating with many companies and organizations,
 The OHIF Viewer has been rebuilt from the ground up to better address the
 varying workflow and configuration needs of its many users. All of the Viewer's
-core features are built using it's own extension system. The same extensibility
+core features are built using its own extension system. The same extensibility
 that allows us to offer:
 
 - 2D and 3D medical image viewing
@@ -147,7 +148,14 @@ Here is a schematic representation of our development workflow:
 3. Navigate to the cloned project's directory
 4. Add this repo as a `remote` named `upstream`
    - `git remote add upstream https://github.com/OHIF/Viewers.git`
-5. `yarn install` to restore dependencies and link projects
+5. `yarn install --frozen-lockfile` to restore dependencies and link projects
+
+:::danger
+In general run `yarn install` with the `--frozen-lockfile` flag to help avoid
+supply chain attacks by enforcing reproducible dependencies. That is, if the
+`yarn.lock` file is clean and does NOT reference compromised packages, then
+no compromised packages should land on your machine by using this flag.
+:::
 
 #### To Develop
 
@@ -158,7 +166,7 @@ _From this repository's root directory:_
 yarn config set workspaces-experimental true
 
 # Restore dependencies
-yarn install
+yarn install --frozen-lockfile
 ```
 
 ## Commands

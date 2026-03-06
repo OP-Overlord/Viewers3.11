@@ -436,7 +436,7 @@ const connectMeasurementServiceToTools = ({
         return;
       }
 
-      const { referenceSeriesUID, referenceStudyUID, SOPInstanceUID } = measurement;
+      const { referenceSeriesUID, referenceStudyUID, SOPInstanceUID, metadata } = measurement;
 
       const instance = DicomMetadataStore.getInstance(
         referenceStudyUID,
@@ -450,7 +450,7 @@ const connectMeasurementServiceToTools = ({
       if (measurement?.metadata?.referencedImageId) {
         imageId = measurement.metadata.referencedImageId;
         frameNumber = getSOPInstanceAttributes(measurement.metadata.referencedImageId).frameNumber;
-      } else {
+      } else if (instance) {
         imageId = dataSource.getImageIdsForInstance({ instance });
       }
 
@@ -461,10 +461,17 @@ const connectMeasurementServiceToTools = ({
       const annotationManager = annotation.state.getAnnotationManager();
       const newAnnotation = {
         annotationUID: measurement.uid,
+        // Not used in CS3D but stored in the CS3D state so that saving
+        // can apply the predecessor consistently.
+        predecessorImageId: measurement?.predecessorImageId,
         highlighted: false,
         isLocked: false,
-        invalidated: false,
+        // This is used to force a re-render of the annotation to
+        // re-calculate cached stats since sometimes in SR we
+        // get empty cached stats
+        invalidated: true,
         metadata: {
+          ...metadata,
           toolName: measurement.toolName,
           FrameOfReferenceUID: measurement.FrameOfReferenceUID,
           referencedImageId: imageId,
@@ -499,11 +506,15 @@ const connectMeasurementServiceToTools = ({
       }
       const removedAnnotation = annotation.state.getAnnotation(removedMeasurementId);
       removeAnnotation(removedMeasurementId);
-      commandsManager.run('triggerCreateAnnotationMemo', {
-        annotation: removedAnnotation,
-        FrameOfReferenceUID: removedAnnotation.metadata.FrameOfReferenceUID,
-        options: { deleting: true },
-      });
+      // Ensure `removedAnnotation` is available before triggering the memo,
+      // as it can be undefined during an undo operation
+      if (removedAnnotation) {
+        commandsManager.run('triggerCreateAnnotationMemo', {
+          annotation: removedAnnotation,
+          FrameOfReferenceUID: removedAnnotation.metadata.FrameOfReferenceUID,
+          options: { deleting: true },
+        });
+      }
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       // Note: We could do a better job by triggering the render on the
       // viewport itself, but the removeAnnotation does not include that info...

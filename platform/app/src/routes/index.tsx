@@ -19,7 +19,7 @@ const NotFoundServer = ({
   message = 'Unable to query for studies at this time. Check your data source configuration or network connection',
 }) => {
   return (
-    <div className="absolute flex h-full w-full items-center justify-center text-white">
+    <div className="text-foreground absolute flex h-full w-full items-center justify-center">
       <div>
         <h4>{message}</h4>
       </div>
@@ -36,7 +36,7 @@ const NotFoundStudy = () => {
   const { showStudyList } = appConfig;
 
   return (
-    <div className="absolute flex h-full w-full items-center justify-center text-white">
+    <div className="text-foreground absolute flex h-full w-full items-center justify-center">
       <div>
         <h4>
         El estudio solicitado no se encuentra disponible en este momento. Contacte a su centro de atención para recibir acompañamiento!
@@ -75,7 +75,7 @@ const bakedInRoutes = [
 ];
 
 // NOT FOUND (404)
-const notFoundRoute = { component: NotFound };
+const notFoundRoute = { path: '*', children: NotFound };
 
 const createRoutes = ({
   modes,
@@ -123,11 +123,17 @@ const createRoutes = ({
   ];
 
   function RouteWithErrorBoundary({ route, ...rest }) {
+    const [appConfig] = useAppConfig();
+    const { showErrorDetails } = appConfig;
+
     history.navigate = useNavigate();
 
     // eslint-disable-next-line react/jsx-props-no-spreading
     return (
-      <ErrorBoundary context={`Route ${route.path}`}>
+      <ErrorBoundary
+        context={`Route ${route.path}`}
+        showErrorDetails={showErrorDetails}
+      >
         <route.children
           {...rest}
           {...route.props}
