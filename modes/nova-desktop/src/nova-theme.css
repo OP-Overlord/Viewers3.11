@@ -70,12 +70,13 @@ body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
 /* === PROFESSIONAL TOOLBAR STYLING === */
 
 /* Fix header container height to accommodate larger buttons with labels */
-.theme-nova [class*='bg-secondary-dark'] > div[class*='relative'][class*='items-center'] {
+/* OHIF 3.13: NavBar class changed from bg-secondary-dark to bg-popover */
+.theme-nova [class*='bg-popover'] > div[class*='relative'][class*='items-center'] {
   height: 94px !important; /* Increased to accommodate 74px buttons */
 }
 
 /* Force toolbar background to pure black */
-.theme-nova [class*='bg-secondary-dark'] {
+.theme-nova [class*='bg-popover'] {
   background-color: var(--bg-color) !important;
 }
 
@@ -436,7 +437,8 @@ body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
 /* === VIEWPORT CONTAINER OVERRIDE === */
 /* Fix for viewport overflow due to increased toolbar height */
 /* Overrides inline style from ViewerLayout/index.tsx using specific utility classes */
-.theme-nova .relative.flex.w-full.flex-row.flex-nowrap.items-stretch.overflow-hidden.bg-black {
+/* OHIF 3.13: class changed from bg-black to bg-background */
+.theme-nova .relative.flex.w-full.flex-row.flex-nowrap.items-stretch.overflow-hidden.bg-background {
   height: calc(100vh - 102px) !important;
 }
 
@@ -494,7 +496,16 @@ body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
   border: 1px solid var(--primary-color);
 }
 
-.theme-nova .bg-popover {
+/* Remove border from right panel tab headers */
+.theme-nova #viewerLayoutResizableRightPanel > div > div.bg-muted.flex.h-\[40px\].flex-shrink-0.select-none.rounded-t.p-2 {
+  border: none;
+}
+
+.theme-nova #viewerLayoutResizableRightPanel > div > div.bg-muted.flex.h-\[40px\].flex-shrink-0.select-none.rounded-t.p-2 > div.flex.grow.justify-center > div {
+  border: none;
+}
+
+.theme-nova .bg-popover:not(.z-20) {
   border: 1px solid var(--primary-color);
 }
 
@@ -534,6 +545,18 @@ body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
 .theme-nova .thumbnail.active {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+/* Selected (active viewport) thumbnail: border doubled (1px → 2px), same color as active viewport */
+.theme-nova [data-cy='study-browser-thumbnail']:has(.bg-popover.rounded),
+.theme-nova [data-cy='study-browser-thumbnail-no-image']:has(.bg-popover.rounded) {
+  border-width: 1.8px;
+  border-color: var(--primary-color);
+}
+.theme-nova [data-cy='study-browser-thumbnail'] .bg-popover.rounded,
+.theme-nova [data-cy='study-browser-thumbnail-no-image'] .bg-popover.rounded {
+  border-width: 1.8px;
+  border-color: var(--primary-color);
 }
 
 /* === PROFESSIONAL SCROLLBARS === */

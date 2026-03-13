@@ -34,7 +34,7 @@ window.config = {
   // filterQueryParam: false,
   // Defines multi-monitor layouts
 
-  showPatientInfo: 'visible',
+  showPatientInfo: 'disabled',
   disableConfirmationPrompts: true,
   disableEditing: true,
   studyListFunctionsEnabled: true,
@@ -111,7 +111,7 @@ window.config = {
   ],
   modesConfiguration: {
     'nova-desktop': {
-      clinicalNewsEnabled: true,
+      clinicalNewsEnabled: false,
     },
   },
   defaultDataSourceName: 'dicomweb',
@@ -128,7 +128,7 @@ window.config = {
   dataSources: [
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
-      sourceName: 'ohif',
+      sourceName: 'dicomweb',
       configuration: {
         friendlyName: 'AWS S3 Static wado server',
         name: 'aws',

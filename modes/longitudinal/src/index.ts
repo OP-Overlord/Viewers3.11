@@ -1,15 +1,7 @@
 import i18n from 'i18next';
 import { id } from './id';
-import { initToolGroups, toolbarButtons, cornerstone,
-  ohif,
-  dicomsr,
-  dicomvideo,
-  basicLayout,
-  basicRoute,
-  extensionDependencies as basicDependencies,
-  mode as basicMode,
-  modeInstance as basicModeInstance,
- } from '@ohif/mode-basic';
+import initToolGroups from './initToolGroups';
+import toolbarButtons from './toolbarButtons';
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
 // Also, SM is not a simple imaging modalities, so exclude it.
@@ -35,43 +27,53 @@ const tracked = {
   viewport: '@ohif/extension-measurement-tracking.viewportModule.cornerstone-tracked',
 };
 
-export const extensionDependencies = {
-  // Can derive the versions at least process.env.from npm_package_version
-  ...basicDependencies,
-  '@ohif/extension-measurement-tracking': '^3.0.0',
+const dicomsr = {
+  sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
+  sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
+  viewport: '@ohif/extension-cornerstone-dicom-sr.viewportModule.dicom-sr',
 };
 
-export const longitudinalInstance = {
-  ...basicLayout,
-  id: ohif.layout,
-  props: {
-    ...basicLayout.props,
-    leftPanels: [tracked.thumbnailList],
-    rightPanels: [cornerstone.segmentation, tracked.measurements],
-    viewports: [
-      {
-        namespace: tracked.viewport,
-        // Re-use the display sets from basic
-        displaySetsToDisplay: basicLayout.props.viewports[0].displaySetsToDisplay,
-      },
-      ...basicLayout.props.viewports,
-      ],
-    }
-  };
+const dicomvideo = {
+  sopClassHandler: '@ohif/extension-dicom-video.sopClassHandlerModule.dicom-video',
+  viewport: '@ohif/extension-dicom-video.viewportModule.dicom-video',
+};
 
+const dicompdf = {
+  sopClassHandler: '@ohif/extension-dicom-pdf.sopClassHandlerModule.dicom-pdf',
+  viewport: '@ohif/extension-dicom-pdf.viewportModule.dicom-pdf',
+};
 
-export const longitudinalRoute =
-    {
-      ...basicRoute,
-      path: 'longitudinal',
-        /*init: ({ servicesManager, extensionManager }) => {
-          //defaultViewerRouteInit
-        },*/
-      layoutInstance: longitudinalInstance,
-    };
+const dicomSeg = {
+  sopClassHandler: '@ohif/extension-cornerstone-dicom-seg.sopClassHandlerModule.dicom-seg',
+  viewport: '@ohif/extension-cornerstone-dicom-seg.viewportModule.dicom-seg',
+};
 
-export const modeInstance = {
-    ...basicModeInstance,
+const dicomPmap = {
+  sopClassHandler: '@ohif/extension-cornerstone-dicom-pmap.sopClassHandlerModule.dicom-pmap',
+  viewport: '@ohif/extension-cornerstone-dicom-pmap.viewportModule.dicom-pmap',
+};
+
+const dicomRT = {
+  viewport: '@ohif/extension-cornerstone-dicom-rt.viewportModule.dicom-rt',
+  sopClassHandler: '@ohif/extension-cornerstone-dicom-rt.sopClassHandlerModule.dicom-rt',
+};
+
+const extensionDependencies = {
+  // Can derive the versions at least process.env.from npm_package_version
+  '@ohif/extension-default': '^3.0.0',
+  '@ohif/extension-cornerstone': '^3.0.0',
+  '@ohif/extension-measurement-tracking': '^3.0.0',
+  '@ohif/extension-cornerstone-dicom-sr': '^3.0.0',
+  '@ohif/extension-cornerstone-dicom-seg': '^3.0.0',
+  '@ohif/extension-cornerstone-dicom-pmap': '^3.0.0',
+  '@ohif/extension-cornerstone-dicom-rt': '^3.0.0',
+  '@ohif/extension-dicom-pdf': '^3.0.1',
+  '@ohif/extension-dicom-video': '^3.0.1',
+};
+
+function modeFactory({ modeConfiguration }) {
+  let _activatePanelTriggersSubscriptions = [];
+  return {
     // TODO: We're using this as a route segment
     // We should not be.
     id,
@@ -234,7 +236,55 @@ export const modeInstance = {
       };
     },
     routes: [
-      longitudinalRoute
+      {
+        path: 'longitudinal',
+        /*init: ({ servicesManager, extensionManager }) => {
+          //defaultViewerRouteInit
+        },*/
+        layoutTemplate: () => {
+          return {
+            id: ohif.layout,
+            props: {
+              leftPanels: [tracked.thumbnailList],
+              leftPanelResizable: true,
+              rightPanels: [cornerstone.segmentation, tracked.measurements],
+              rightPanelClosed: true,
+              rightPanelResizable: true,
+              viewports: [
+                {
+                  namespace: tracked.viewport,
+                  displaySetsToDisplay: [
+                    ohif.sopClassHandler,
+                    dicomvideo.sopClassHandler,
+                    dicomsr.sopClassHandler3D,
+                    ohif.wsiSopClassHandler,
+                  ],
+                },
+                {
+                  namespace: dicomsr.viewport,
+                  displaySetsToDisplay: [dicomsr.sopClassHandler],
+                },
+                {
+                  namespace: dicompdf.viewport,
+                  displaySetsToDisplay: [dicompdf.sopClassHandler],
+                },
+                {
+                  namespace: dicomSeg.viewport,
+                  displaySetsToDisplay: [dicomSeg.sopClassHandler],
+                },
+                {
+                  namespace: dicomPmap.viewport,
+                  displaySetsToDisplay: [dicomPmap.sopClassHandler],
+                },
+                {
+                  namespace: dicomRT.viewport,
+                  displaySetsToDisplay: [dicomRT.sopClassHandler],
+                },
+              ],
+            },
+          };
+        },
+      },
     ],
     extensions: extensionDependencies,
     // Default protocol gets self-registered by default in the init
@@ -257,11 +307,11 @@ export const modeInstance = {
     ],
     ...modeConfiguration,
   };
+}
 
 const mode = {
-  ...basicMode,
   id,
-  modeInstance,
+  modeFactory,
   extensionDependencies,
 };
 

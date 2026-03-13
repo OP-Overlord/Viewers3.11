@@ -149,7 +149,7 @@ window.config = {
   modes: [],
   extensions: [],
   showStudyList: true,
-  showPatientInfo: 'visible',
+  showPatientInfo: 'disabled',
   disableConfirmationPrompts: true,
   disableEditing: true,
   studyListFunctionsEnabled: true,

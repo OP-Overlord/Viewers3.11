@@ -163,16 +163,6 @@ const makeDisplaySet = (instances, index) => {
     FrameOfReferenceUID: instance.FrameOfReferenceUID,
   });
 
-  const imageIds = dataSource.getImageIdsForDisplaySet(imageSet);
-  let imageId = imageIds[Math.floor(imageIds.length / 2)];
-  let thumbnailInstance = instances[Math.floor(instances.length / 2)];
-  if (isDynamicVolume) {
-    const timePoints = dynamicVolumeInfo.timePoints;
-    const middleIndex = Math.floor(timePoints.length / 2);
-    const middleTimePointImageIds = timePoints[middleIndex];
-    imageId = middleTimePointImageIds[Math.floor(middleTimePointImageIds.length / 2)];
-  }
-
   imageSet.setAttributes({
     getThumbnailSrc: dataSource.retrieve.getGetThumbnailSrc?.(thumbnailInstance, imageId),
   });

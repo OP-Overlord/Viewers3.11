@@ -42,7 +42,7 @@
 # Stage 1: Build the application
 # docker build -t ohif/viewer:latest .
 # Copy Files
-FROM node:20.18.1-slim as builder
+FROM node:20.19.3-slim as builder
 
 RUN apt-get update && apt-get install -y build-essential python3
 
@@ -50,7 +50,7 @@ RUN apt-get update && apt-get install -y build-essential python3
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 RUN npm install -g bun
-RUN npm install -g lerna@7.4.2
+RUN npm install -g lerna@9.0.4
 ENV PATH=/usr/src/app/node_modules/.bin:$PATH
 
 # Do an initial install and then a final install
