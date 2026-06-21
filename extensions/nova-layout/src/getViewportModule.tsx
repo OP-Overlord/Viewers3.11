@@ -12,6 +12,18 @@ const LazyMobileViewport = props => {
   );
 };
 
+const PdfComponent = React.lazy(() => {
+  return import(/* webpackPrefetch: true */ './Viewport/MobilePdfViewport');
+});
+
+const LazyMobilePdfViewport = props => {
+  return (
+    <React.Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-black" />}>
+      <PdfComponent {...props} />
+    </React.Suspense>
+  );
+};
+
 export default function getViewportModule({ servicesManager, extensionManager, commandsManager }) {
   return [
     {
@@ -24,6 +36,10 @@ export default function getViewportModule({ servicesManager, extensionManager, c
           commandsManager={commandsManager}
         />
       ),
+    },
+    {
+      name: 'mobile-pdf',
+      component: LazyMobilePdfViewport,
     },
   ];
 }

@@ -1130,11 +1130,66 @@ function commandsModule({
       }
 
       try {
-        const element = enabledElementInfo.viewport.element as HTMLElement;
-        const canvas = await html2canvas(element);
+        const viewport = enabledElementInfo.viewport as any;
+        const element = viewport.element as HTMLElement;
+        // Captura completa del viewport (incluye overlays y anotaciones SVG).
+        const fullCanvas = await html2canvas(element);
+
+        // La imagen DICOM se ajusta al viewport dejando un letterbox negro
+        // alrededor. Calculamos el recuadro real de la imagen proyectando las
+        // esquinas del actor de la imagen a coordenadas de canvas, y recortamos.
+        let cropRect: { x: number; y: number; w: number; h: number } | null = null;
+        try {
+          const actor = viewport.getDefaultActor?.()?.actor;
+          const csCanvas = viewport.getCanvas?.() as HTMLCanvasElement | undefined;
+          if (actor?.getBounds && typeof viewport.worldToCanvas === 'function' && csCanvas) {
+            const b = actor.getBounds(); // [xMin, xMax, yMin, yMax, zMin, zMax]
+            const corners = [
+              [b[0], b[2], b[4]], [b[0], b[2], b[5]], [b[0], b[3], b[4]], [b[0], b[3], b[5]],
+              [b[1], b[2], b[4]], [b[1], b[2], b[5]], [b[1], b[3], b[4]], [b[1], b[3], b[5]],
+            ];
+            const pts = corners.map(c => viewport.worldToCanvas(c));
+            const elRect = element.getBoundingClientRect();
+            const cvRect = csCanvas.getBoundingClientRect();
+            const offX = cvRect.left - elRect.left;
+            const offY = cvRect.top - elRect.top;
+            // html2canvas escala el elemento; deducimos la escala de la salida.
+            const scale = fullCanvas.width / element.offsetWidth;
+            const xs = pts.map(p => (offX + p[0]) * scale);
+            const ys = pts.map(p => (offY + p[1]) * scale);
+            const minX = Math.max(0, Math.floor(Math.min(...xs)));
+            const minY = Math.max(0, Math.floor(Math.min(...ys)));
+            const maxX = Math.min(fullCanvas.width, Math.ceil(Math.max(...xs)));
+            const maxY = Math.min(fullCanvas.height, Math.ceil(Math.max(...ys)));
+            if (maxX - minX > 1 && maxY - minY > 1) {
+              cropRect = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+            }
+          }
+        } catch (cropErr) {
+          console.warn('No se pudo recortar el fondo negro; se copia el viewport completo', cropErr);
+        }
+
+        let outputCanvas: HTMLCanvasElement = fullCanvas;
+        if (cropRect) {
+          const cropped = document.createElement('canvas');
+          cropped.width = cropRect.w;
+          cropped.height = cropRect.h;
+          const ctx = cropped.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(
+              fullCanvas,
+              cropRect.x, cropRect.y, cropRect.w, cropRect.h,
+              0, 0, cropRect.w, cropRect.h
+            );
+            outputCanvas = cropped;
+          }
+        }
 
         const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+          outputCanvas.toBlob(
+            b => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+            'image/png'
+          );
         });
 
         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);

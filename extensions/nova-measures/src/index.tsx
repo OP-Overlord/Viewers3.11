@@ -4,7 +4,15 @@ import KiteAngleTool from './KiteAngleTool';
 import HilgenreinerAngleTool from './HilgenreinerAngleTool';
 import TonnisAngleTool from './TonnisAngleTool';
 import InsallSalvatiIndexTool from './InsallSalvatiIndexTool';
-import { addTool } from '@cornerstonejs/tools';
+import { addTool, annotation } from '@cornerstonejs/tools';
+
+const NOVA_TOOL_NAMES = [
+  CardioThoracicIndexTool.toolName,
+  KiteAngleTool.toolName,
+  HilgenreinerAngleTool.toolName,
+  TonnisAngleTool.toolName,
+  InsallSalvatiIndexTool.toolName,
+];
 
 /**
  * You can remove any of the following modules if you don't need them.
@@ -81,7 +89,72 @@ export default {
    * object of functions, definitions is an object of available commands, their
    * options, and defaultContext is the default context for the command to run against.
    */
-  getCommandsModule: ({ servicesManager, commandsManager, extensionManager }) => {},
+  getCommandsModule: ({ servicesManager }) => {
+    const { cornerstoneViewportService } = servicesManager.services;
+    const removeNovaAnnotation = ({ uid }) => {
+      annotation.state.removeAnnotation(uid);
+      // Remove all SVG elements manually added by nova tools.
+      // Cornerstone does not manage these and won't clean them up on render.
+      // Selectors cover all custom attributes used across nova-measures tools:
+      //   data-text-line  → CardioThoracicIndex, KiteAngle, TonnisAngle, HilgenreinerAngle, InsallSalvati
+      //   data-arc        → KiteAngle, TonnisAngle
+      //   data-arc-left / data-arc-right → HilgenreinerAngle
+      //   data-segment-label → InsallSalvati
+      const baseAttr = `[data-annotation-uid="${uid}"]`;
+      document
+        .querySelectorAll(
+          `${baseAttr}[data-text-line],${baseAttr}[data-arc],${baseAttr}[data-arc-left],${baseAttr}[data-arc-right],${baseAttr}[data-segment-label]`
+        )
+        .forEach(el => el.remove());
+      cornerstoneViewportService.getRenderingEngine()?.render();
+    };
+    return {
+      definitions: {
+        removeNovaAnnotation: { commandFn: removeNovaAnnotation },
+      },
+      defaultContext: 'CORNERSTONE',
+    };
+  },
+  getCustomizationModule: () => [
+    {
+      name: 'default',
+      value: {
+        measurementsContextMenu: {
+          $set: {
+            inheritsFrom: 'ohif.contextMenu',
+            menus: [
+              {
+                id: 'forNovaAnnotation',
+                selector: ({ nearbyToolData, toolName }) =>
+                  !!nearbyToolData && NOVA_TOOL_NAMES.includes(toolName),
+                items: [
+                  {
+                    label: 'Delete',
+                    commands: 'removeNovaAnnotation',
+                  },
+                ],
+              },
+              {
+                id: 'forExistingMeasurement',
+                selector: ({ nearbyToolData, toolName }) =>
+                  !!nearbyToolData && !NOVA_TOOL_NAMES.includes(toolName),
+                items: [
+                  {
+                    label: 'Delete measurement',
+                    commands: 'removeMeasurement',
+                  },
+                  {
+                    label: 'Add Label',
+                    commands: 'setMeasurementLabel',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    },
+  ],
   /**
    * ContextModule should provide a list of context that will be available in OHIF
    * and will be provided to the Modes. A context is a state that is shared OHIF.

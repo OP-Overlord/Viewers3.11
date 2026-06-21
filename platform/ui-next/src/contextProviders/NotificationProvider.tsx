@@ -67,6 +67,10 @@ const NotificationProvider = ({
       action,
     } = newNotification;
 
+    if (type === 'error') {
+      return;
+    }
+
     // Use the provider's deduplicationInterval by default, but allow it to be overridden per notification
     const notificationDeduplicationInterval = optionsDeduplicationInterval || deduplicationInterval;
 

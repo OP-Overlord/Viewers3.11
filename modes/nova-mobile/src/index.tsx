@@ -3,6 +3,7 @@ import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import hpMobile from './hpMobile';
 import { id } from './id';
+import './nova-mobile-theme.css';
 
 /**
  * 200 MB Cornerstone image cache for mobile.
@@ -110,7 +111,9 @@ const dicomvideo = {
 
 const dicompdf = {
   sopClassHandler: '@ohif/extension-dicom-pdf.sopClassHandlerModule.dicom-pdf',
-  viewport: '@ohif/extension-dicom-pdf.viewportModule.dicom-pdf',
+  // Use the mobile-specific PDF viewport (iframe-based) instead of the upstream
+  // <object>-based one, which shows "No online PDF viewer installed" on mobile browsers.
+  viewport: 'nova-layout.viewportModule.mobile-pdf',
 };
 
 const dicomSeg = {
@@ -157,6 +160,12 @@ function modeFactory({ modeConfiguration }) {
       const { measurementService, toolbarService, toolGroupService, customizationService } =
         servicesManager.services;
 
+      // Apply mobile theme class (scopes all nova-mobile-theme.css rules)
+      const root = document.getElementById('root');
+      if (root && !root.classList.contains('theme-nova-mobile')) {
+        root.classList.add('theme-nova-mobile');
+      }
+
       measurementService.clearMeasurements();
 
       // Limit Cornerstone image cache to prevent OOM on mobile devices.
@@ -182,6 +191,10 @@ function modeFactory({ modeConfiguration }) {
     },
 
     onModeExit: ({ servicesManager }: withAppTypes) => {
+      // Remove mobile theme class
+      const root = document.getElementById('root');
+      root?.classList.remove('theme-nova-mobile');
+
       const {
         toolGroupService,
         syncGroupService,

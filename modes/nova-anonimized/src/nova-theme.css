@@ -1,0 +1,753 @@
+/*
+ * NOVA DESKTOP - Professional Medical Viewer Theme
+ * Modern Medical UI Design - Based on Contemporary PACS Systems
+ * Version: 3.11 Professional Edition
+ */
+
+.theme-nova {
+  /* === PROFESSIONAL MEDICAL COLOR PALETTE === */
+  --primary-color: #4a9eff; /* Medical Blue */
+  --primary-hover: #00d9ff; /* Bright Cyan */
+  --accent-color: #00d9ff; /* Bright Cyan Accent */
+  --accent-hover: #5baaff;
+  --bg-color: #000000; /* Pure Black */
+  --bg-elevated: #0a0a0a; /* Slightly Elevated Black */
+  --bg-panel: #111111; /* Panel Background */
+  --text-color: #ffffff; /* Pure White */
+  --text-secondary: #7b8b9f; /* Muted Blue-Gray */
+  --text-muted: #5a6b7f; /* Darker Muted */
+  --border-color: #1a2940; /* Subtle Blue Border */
+  --border-strong: #253649; /* Stronger Border */
+
+  /* === STATUS COLORS === */
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --info-color: #4a9eff;
+
+  /* === OVERRIDE TAILWIND CSS VARIABLES - Force pure black backgrounds === */
+  --background: 0 0% 0%; /* Pure Black */
+  --background-elevated: 0 0% 4%; /* Slightly Elevated Black */
+  --background-panel: 0 0% 7%; /* Panel Background */
+  --popover: 0 0% 0%; /* Dropdowns/Popovers */
+  --card: 0 0% 0%; /* Cards */
+  --muted: 0 0% 0%; /* Muted elements */
+
+  /* === SHADOWS === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(74, 158, 255, 0.3);
+}
+
+/* Propagate black background variables to Radix portals rendered on body */
+body:has(.theme-nova) {
+  --background: 0 0% 0%;
+  --popover: 0 0% 0%;
+  --card: 0 0% 0%;
+  --muted: 0 0% 0%;
+}
+
+/* Add border to dialog modals (portals) rendered on body */
+body:has(.theme-nova) [role='dialog'].bg-muted {
+  border: 1px solid var(--primary-color, #4a9eff);
+  border-radius: 8px;
+}
+
+/* Add border to image preview area inside download modal */
+body:has(.theme-nova) [role='dialog'] .bg-black\/80 {
+  border: 1px solid var(--primary-color, #4a9eff);
+  border-radius: 12px;
+}
+
+/* === HEADER ENHANCEMENTS === */
+.theme-nova .ohif-header {
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+/* === PROFESSIONAL TOOLBAR STYLING === */
+
+/* Fix header container height to accommodate larger buttons with labels */
+/* OHIF 3.13: NavBar class changed from bg-secondary-dark to bg-popover */
+.theme-nova [class*='bg-popover'] > div[class*='relative'][class*='items-center'] {
+  height: 94px !important; /* Increased to accommodate 74px buttons */
+}
+
+/* Force toolbar background to pure black */
+.theme-nova [class*='bg-popover'] {
+  background-color: var(--bg-color) !important;
+}
+
+/* Main toolbar container - Increased height for buttons with labels */
+.theme-nova .absolute.left-1\/2.top-1\/2 {
+  left: 18rem;
+  top: 0.5rem;
+  transform: translate(0, 0);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  height: auto !important;
+  min-height: 82px; /* Increased to accommodate 74px buttons */
+}
+
+/* Inner flex container */
+.theme-nova .absolute.left-1\/2.top-1\/2 > div {
+  height: auto !important;
+  min-height: 82px;
+}
+
+/* Toolbar button group spacing */
+.theme-nova .relative.flex.justify-center.gap-\[4px\] {
+  gap: 0.5rem !important;
+  height: auto !important;
+  min-height: 82px;
+  align-items: center;
+}
+
+/* Professional toolbar buttons - Minimal Clean Design with Labels */
+/* ONLY applies to main toolbar buttons (not sidebar buttons) */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'],
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'] {
+  position: relative;
+  width: 60px;
+  height: 74px; /* Increased to accommodate icon + label */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+  cursor: pointer;
+  overflow: visible;
+  padding: 4px 2px;
+}
+
+/* Override default styles for active buttons - MUST be visible without hover */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:has(button.bg-highlight),
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:has(button.bg-highlight) {
+  border-color: var(--primary-color) !important;
+  background: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']::before,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']::before {
+  display: none;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:hover,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:hover {
+  border-color: var(--primary-color);
+  background: rgba(74, 158, 255, 0.1);
+  color: var(--primary-color);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Active button hover - slightly more intense */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:has(button.bg-highlight):hover,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:has(button.bg-highlight):hover {
+  background: rgba(74, 158, 255, 0.25) !important;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:hover::before,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:hover::before {
+  opacity: 0;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:active,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:active {
+  transform: scale(0.95);
+}
+
+/* Active toolbar button state - matches hover state */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][data-active='true'],
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][aria-pressed='true'],
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'].active,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'][data-active='true'],
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'][aria-pressed='true'],
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'].active {
+  border-color: var(--primary-color) !important;
+  background: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+  box-shadow: none !important;
+}
+
+/* Active button inner element (overrides Tailwind classes) */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][data-active='true'] button,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'][data-active='true'] button {
+  border-color: var(--primary-color) !important;
+  background: rgba(74, 158, 255, 0.15) !important;
+  background-color: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][data-active='true'] button *,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'][data-active='true'] button * {
+  color: var(--primary-color) !important;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][data-active='true'] button svg,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'][data-active='true'] button svg {
+  color: var(--primary-color) !important;
+}
+
+/* Ensure active state is visible even with Tailwind classes */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'][data-active='true'] button.bg-highlight,
+.theme-nova
+  [data-cy$='-split-button-primary']
+  [data-cy$='-btn'][data-active='true']
+  button.bg-highlight {
+  background: rgba(74, 158, 255, 0.15) !important;
+  background-color: rgba(74, 158, 255, 0.15) !important;
+  border-color: var(--primary-color) !important;
+}
+
+/* ============================================ */
+/* CRITICAL FIX: Active button state           */
+/* Must override Tailwind bg-highlight class   */
+/* ============================================ */
+
+/* Target the button element directly when it has bg-highlight */
+.theme-nova button.bg-highlight.text-background {
+  background-color: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+/* More specific: toolbar buttons only */
+.theme-nova .absolute.left-1\/2.top-1\/2 button.bg-highlight {
+  background-color: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+/* Force parent span border to be blue when button is active */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:has(button.bg-highlight) {
+  border-color: var(--primary-color) !important;
+}
+
+/* All children of active button must be blue */
+.theme-nova button.bg-highlight * {
+  color: var(--primary-color) !important;
+}
+
+/* SVG specific - use currentColor which respects the icon's structure */
+.theme-nova button.bg-highlight svg {
+  color: var(--primary-color) !important;
+}
+
+/* Only change stroke if it exists and isn't 'none' */
+.theme-nova button.bg-highlight svg [stroke]:not([stroke='none']) {
+  stroke: var(--primary-color) !important;
+}
+
+/* Only change fill if it exists and isn't 'none' */
+.theme-nova button.bg-highlight svg [fill]:not([fill='none']) {
+  fill: var(--primary-color) !important;
+}
+
+/* For elements using currentColor */
+.theme-nova button.bg-highlight svg [fill='currentColor'] {
+  fill: var(--primary-color) !important;
+}
+
+.theme-nova button.bg-highlight svg [stroke='currentColor'] {
+  stroke: var(--primary-color) !important;
+}
+
+/* Toolbar button icons - Sized for icon + label layout */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'] svg,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'] svg {
+  width: 24px;
+  height: 24px;
+  transition: none;
+  flex-shrink: 0;
+}
+
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:hover svg,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn']:hover svg {
+  transform: none;
+}
+
+/* Label styling within buttons */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn'] span,
+.theme-nova [data-cy$='-split-button-primary'] [data-cy$='-btn'] span {
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Vertical separators between specific toolbar buttons */
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:nth-child(3)::after,
+.theme-nova .absolute.left-1\/2.top-1\/2 [data-cy$='-btn']:nth-child(11)::after {
+  content: '';
+  position: absolute;
+  right: -0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60px; /* Increased to match 74px buttons */
+  background: var(--border-color);
+}
+
+/* === SIDEBAR BUTTONS - REDUCED SIZE TO PREVENT OVERFLOW === */
+
+/* Left and Right sidebar panel buttons - smaller size */
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'],
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'] {
+  position: relative;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+  cursor: pointer;
+  padding: 0;
+  margin: 2px 0;
+}
+
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn']:hover,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn']:hover {
+  border-color: var(--primary-color);
+  background: rgba(74, 158, 255, 0.1);
+  color: var(--primary-color);
+}
+
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn']:active,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn']:active {
+  transform: scale(0.95);
+}
+
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'][data-active='true'],
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'][aria-pressed='true'],
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'].active,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'][data-active='true'],
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'][aria-pressed='true'],
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'].active {
+  border-color: var(--primary-color) !important;
+  background: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+/* Active button inner element for sidebars */
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'][data-active='true'] button,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'][data-active='true'] button {
+  border-color: var(--primary-color) !important;
+  background: rgba(74, 158, 255, 0.15) !important;
+  color: var(--primary-color) !important;
+}
+
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'][data-active='true'] button svg,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'][data-active='true'] button svg {
+  color: var(--primary-color) !important;
+}
+
+/* Sidebar button icons - smaller size */
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'] svg,
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'] svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0;
+}
+
+/* Hide labels in sidebar buttons to save space */
+.theme-nova [data-cy='left-panel'] [data-cy$='-btn'] span:not(.sr-only),
+.theme-nova [data-cy='right-panel'] [data-cy$='-btn'] span:not(.sr-only) {
+  display: none;
+}
+
+/* Side panel header toggle buttons */
+.theme-nova [data-cy='side-panel-header-left'],
+.theme-nova [data-cy='side-panel-header-right'] {
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+/* Adjust side panel tabs when expanded */
+.theme-nova [data-cy='left-panel'] > div > div[class*='flex'][class*='h-'],
+.theme-nova [data-cy='right-panel'] > div > div[class*='flex'][class*='h-'] {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+
+/* === SPLIT BUTTON STYLING === */
+
+/* Split button secondary dropdown trigger - narrower width */
+.theme-nova [data-cy$='-split-button-secondary'] button {
+  width: 20px !important; /* Narrower than main toolbar buttons */
+  height: 74px !important; /* Match toolbar button height */
+  min-width: 20px !important;
+  padding: 0 !important;
+  border: 1px solid var(--border-color);
+  border-left: none; /* No left border, connects to primary button */
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+}
+
+.theme-nova [data-cy$='-split-button-secondary'] button:hover {
+  border-color: var(--primary-color);
+  background: rgba(74, 158, 255, 0.1);
+  color: var(--primary-color);
+}
+
+/* Split button divider - match button height */
+.theme-nova .bg-primary.h-5.w-px.self-center {
+  height: 74px !important; /* Match toolbar button height */
+  background: var(--border-color) !important; /* Use subtle border color */
+  opacity: 1 !important;
+}
+
+/* Ensure primary button in split button also has correct height */
+.theme-nova [data-cy$='-split-button-primary'] > span > button {
+  height: 74px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* === SIDE PANEL PROFESSIONAL STYLING === */
+.theme-nova .side-panel {
+  background: var(--bg-elevated);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-right: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+.theme-nova .side-panel-header {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+/* === VIEWPORT CONTAINER OVERRIDE === */
+/* Fix for viewport overflow due to increased toolbar height */
+/* Overrides inline style from ViewerLayout/index.tsx using specific utility classes */
+/* OHIF 3.13: class changed from bg-black to bg-background */
+.theme-nova .relative.flex.w-full.flex-row.flex-nowrap.items-stretch.overflow-hidden.bg-background {
+  height: calc(100vh - 102px) !important;
+}
+
+/* === VIEWPORT PROFESSIONAL ENHANCEMENTS === */
+.theme-nova .viewport-wrapper {
+  background: var(--bg-color);
+}
+
+.theme-nova .viewport-pane {
+  border: 1px solid var(--border-color);
+  transition: all 150ms ease;
+}
+
+.theme-nova .viewport-pane:hover {
+  border-color: var(--border-color);
+}
+
+.theme-nova .viewport-pane.active {
+  border-color: var(--primary-color);
+  box-shadow: none;
+}
+
+/* Viewport overlay information */
+.theme-nova .viewport-overlay {
+  font-family:
+    'Inter',
+    -apple-system,
+    sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+/* === STUDY BROWSER ENHANCEMENTS === */
+.theme-nova .study-browser {
+  background: var(--bg-elevated);
+}
+
+/* Force non-variable Tailwind backgrounds to pure black */
+.theme-nova .bg-bkg-low {
+  background-color: var(--bg-color) !important;
+}
+
+.theme-nova .bg-bkg-med {
+  background-color: var(--bg-color) !important;
+}
+
+.theme-nova .bg-primary-dark {
+  background-color: var(--bg-color) !important;
+}
+
+/* Add blue border to thumbnail and popover containers */
+.theme-nova .bg-muted {
+  border: 1px solid var(--primary-color);
+}
+
+/* Remove border from right panel tab headers */
+.theme-nova #viewerLayoutResizableRightPanel > div > div.bg-muted.flex.h-\[40px\].flex-shrink-0.select-none.rounded-t.p-2 {
+  border: none;
+}
+
+.theme-nova #viewerLayoutResizableRightPanel > div > div.bg-muted.flex.h-\[40px\].flex-shrink-0.select-none.rounded-t.p-2 > div.flex.grow.justify-center > div {
+  border: none;
+}
+
+.theme-nova .bg-popover:not(.z-20) {
+  border: 1px solid var(--primary-color);
+}
+
+.theme-nova .study-item {
+  background: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  transition: all 150ms ease;
+}
+
+.theme-nova .study-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: none;
+  transform: none;
+}
+
+.theme-nova .study-item.selected {
+  border-color: var(--primary-color);
+  background: rgba(74, 158, 255, 0.08);
+}
+
+/* === THUMBNAIL STYLING === */
+.theme-nova .thumbnail {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: all 150ms ease;
+}
+
+.theme-nova .thumbnail:hover {
+  border-color: var(--border-color);
+  box-shadow: none;
+  transform: none;
+}
+
+.theme-nova .thumbnail.active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+/* Selected (active viewport) thumbnail: border doubled (1px → 2px), same color as active viewport */
+.theme-nova [data-cy='study-browser-thumbnail']:has(.bg-popover.rounded),
+.theme-nova [data-cy='study-browser-thumbnail-no-image']:has(.bg-popover.rounded) {
+  border-width: 1.8px;
+  border-color: var(--primary-color);
+}
+.theme-nova [data-cy='study-browser-thumbnail'] .bg-popover.rounded,
+.theme-nova [data-cy='study-browser-thumbnail-no-image'] .bg-popover.rounded {
+  border-width: 1.8px;
+  border-color: var(--primary-color);
+}
+
+/* === PROFESSIONAL SCROLLBARS === */
+.theme-nova *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-nova *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-nova *::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.theme-nova *::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+  background-clip: padding-box;
+}
+
+/* === DROPDOWN MENUS === */
+.theme-nova .dropdown-menu {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.theme-nova .dropdown-item {
+  color: var(--text-color);
+  transition: all 150ms ease;
+}
+
+.theme-nova .dropdown-item:hover {
+  background: rgba(0, 168, 225, 0.1);
+  color: var(--primary-color);
+}
+
+/* === MODAL DIALOGS === */
+.theme-nova .modal-overlay {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.theme-nova .modal-content {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* === MEASUREMENTS TABLE === */
+.theme-nova .measurements-table {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.theme-nova .measurements-table th {
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.theme-nova .measurements-table td {
+  color: var(--text-color);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.5);
+}
+
+.theme-nova .measurements-table tr:hover {
+  background: rgba(0, 168, 225, 0.05);
+}
+
+/* === STATUS BADGES === */
+.theme-nova .badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.theme-nova .badge-success {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.theme-nova .badge-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning-color);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.theme-nova .badge-error {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error-color);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* === LOADING STATES === */
+.theme-nova .loading-spinner {
+  border: 3px solid rgba(0, 168, 225, 0.1);
+  border-top-color: var(--primary-color);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === TOOLTIPS === */
+.theme-nova .tooltip {
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  color: var(--text-color);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* === FOCUS STATES === */
+.theme-nova *:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 168, 225, 0.1);
+}
+
+/* === ANIMATIONS === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.theme-nova .animate-fade-in {
+  animation: fadeIn 200ms ease-out;
+}
+
+/* === ACCESSIBILITY IMPROVEMENTS === */
+.theme-nova .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* === VIEWPORT OVERLAY TOGGLE (hotkey X) === */
+.nova-hide-overlays .overlay-text {
+  display: none !important;
+}
+
+/* === RESPONSIVE ADJUSTMENTS === */
+@media (max-width: 1024px) {
+  .theme-nova [data-cy$='-btn'] {
+    width: 40px;
+    height: 40px;
+  }
+
+  .theme-nova [data-cy$='-btn'] svg {
+    width: 20px;
+    height: 20px;
+  }
+}

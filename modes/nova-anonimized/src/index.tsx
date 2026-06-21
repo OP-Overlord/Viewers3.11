@@ -1,44 +1,9 @@
-import { hotkeys, defaults } from '@ohif/core';
+import { hotkeys } from '@ohif/core';
 import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import { id } from './id';
 import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
-import AudioCinePlayer from '../../../extensions/nova-cine/src/AudioCinePlayer';
-import { cineViewportStore } from '../../../extensions/nova-cine/src/cineViewportStore';
 import './nova-theme.css';
-
-/**
- * Hotkeys de NOVA Desktop derivados de los defaults de OHIF con dos cambios
- * relativos al cine:
- *  - Se elimina el binding por defecto `c` -> `toggleCine` (que solo mostraba la
- *    barra sin reproducir y afectaba a todos los viewports).
- *  - `space` deja de ser `resetViewport` y pasa a `novaCineTogglePlay` (activa y
- *    reproduce el cine en el viewport seleccionado). El reset se mueve a `0`.
- */
-const novaDesktopHotkeyBindings = [
-  ...defaults.hotkeyBindings
-    .filter(binding => binding.commandName !== 'toggleCine')
-    .map(binding =>
-      binding.commandName === 'resetViewport' ? { ...binding, keys: ['0'] } : binding
-    ),
-  {
-    commandName: 'novaCineTogglePlay',
-    label: 'Cine (reproducir en viewport)',
-    keys: ['space'],
-  },
-  {
-    commandName: 'copyViewportToClipboard',
-    label: 'Copy Viewport to Clipboard',
-    keys: ['ctrl+c'],
-    isEditable: true,
-  },
-  {
-    commandName: 'toggleViewportOverlays',
-    label: 'Toggle Viewport Overlays',
-    keys: ['x'],
-    isEditable: true,
-  },
-];
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
 // Also, SM is not a simple imaging modalities, so exclude it.
@@ -113,28 +78,31 @@ const extensionDependencies = {
   'nova-layout': '^1.0.0',
 };
 
+const OVERLAY_KEYS = [
+  'viewportOverlay.topLeft',
+  'viewportOverlay.topRight',
+  'viewportOverlay.bottomLeft',
+  'viewportOverlay.bottomRight',
+] as const;
+
 function modeFactory({ modeConfiguration }) {
   let _activatePanelTriggersSubscriptions = [];
   let _thumbnailPreloadSub: { unsubscribe: () => void } | null = null;
   let _stackScrollActivated = false;
+  // Saved global overlay values — restored on mode exit so other modes are unaffected
+  let _savedGlobalOverlays: Record<string, any> = {};
   return {
     /**
      * Mode ID, which should be unique among modes used by the viewer. This ID
      * is used to identify the mode in the viewer's state.
      */
     id,
-    routeName: 'desktop',
+    routeName: 'anonimized',
     /**
      * Mode name, which is displayed in the viewer's UI in the workList, for the
      * user to select the mode.
      */
-    displayName: 'NOVA Desktop',
-
-    /*getCustomizationModule() {
-      return [
-        { name: 'ui.themeClass', value: 'theme-nova' }, // clase raíz que podremos estilizar
-      ];
-    },*/
+    displayName: 'NOVA Anonimized',
 
     /**
      * Runs when the Mode Route is mounted to the DOM. Usually used to initialize
@@ -151,40 +119,6 @@ function modeFactory({ modeConfiguration }) {
       }
 
       measurementService.clearMeasurements();
-
-      // Comando de cine de nova: activa y reproduce el cine en el viewport
-      // SELECCIONADO (no en todos), y como segundo toggle lo cierra. La
-      // visibilidad por-viewport la gestiona cineViewportStore (ver nova-cine).
-      // Lo usan tanto el atajo `space` como el botón "Cine" de la toolbar.
-      commandsManager.registerCommand('CORNERSTONE', 'novaCineTogglePlay', () => {
-        const { cineService, viewportGridService, cornerstoneViewportService } =
-          servicesManager.services;
-        const activeViewportId = viewportGridService.getActiveViewportId();
-        if (!activeViewportId) {
-          return;
-        }
-
-        if (cineViewportStore.isOpen(activeViewportId)) {
-          // Segundo toggle: cerrar el cine de este viewport.
-          const viewport = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
-          if (viewport?.element) {
-            cineService.stopClip(viewport.element, { viewportId: activeViewportId });
-          }
-          cineService.setCine({ id: activeViewportId, isPlaying: false });
-          cineService.setViewportCineClosed(activeViewportId);
-          cineViewportStore.close(activeViewportId);
-          if (cineViewportStore.size() === 0) {
-            cineService.setIsCineEnabled(false);
-          }
-          return;
-        }
-
-        // Mostrar y reproducir el cine en el viewport seleccionado.
-        cineService.setIsCineEnabled(true);
-        cineService.clearViewportCineClosed(activeViewportId);
-        cineViewportStore.open(activeViewportId);
-        cineService.setCine({ id: activeViewportId, isPlaying: true });
-      });
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
@@ -247,6 +181,7 @@ function modeFactory({ modeConfiguration }) {
         'LivewireContour',
       ]);
 
+      // TagBrowser excluded in anonimized mode
       toolbarService.updateSection('MoreTools', [
         'Reset',
         'rotate-right',
@@ -258,25 +193,52 @@ function modeFactory({ modeConfiguration }) {
         'Probe',
         'Magnify',
         'CalibrationLine',
-        'TagBrowser',
         'AdvancedMagnify',
         'UltrasoundDirectionalTool',
         'WindowLevelRegion',
       ]);
+
       customizationService.setCustomizations({
-        // Reproductor de cine estilo reproductor de audio (barra inferior
-        // flotante que no obstruye la imagen). Provisto por la extensión nova-cine.
-        cinePlayer: {
-          $set: AudioCinePlayer,
-        },
         'panelSegmentation.disableEditing': {
           $set: true,
         },
         'ohif.hotkeyBindings': {
-          $set: novaDesktopHotkeyBindings,
+          $push: [
+            {
+              commandName: 'copyViewportToClipboard',
+              label: 'Copy Viewport to Clipboard',
+              keys: ['ctrl+c'],
+              isEditable: true,
+            },
+            {
+              commandName: 'toggleViewportOverlays',
+              label: 'Toggle Viewport Overlays',
+              keys: ['x'],
+              isEditable: true,
+            },
+          ],
         },
       });
-      // si está en DX/CR/RX, mostramos el grupo; si no, lo vaciamos (queda oculto)
+
+      // Override overlays at Global scope so they take priority over app-config globals.
+      // The app config (nova_demo.js) registers patient info (name, ID, age) and study
+      // data into these keys as Global customizations. Mode-scope $set is ignored because
+      // Global always wins (global > mode > default in CustomizationService priority).
+      const globalMap = customizationService.getCustomizations(customizationService.Scope.Global);
+      _savedGlobalOverlays = {};
+      OVERLAY_KEYS.forEach(key => {
+        _savedGlobalOverlays[key] = globalMap.get(key);
+      });
+      customizationService.setCustomizations(
+        {
+          'viewportOverlay.topLeft': { $set: [] },
+          'viewportOverlay.topRight': { $set: [] },
+          'viewportOverlay.bottomLeft': { $set: [] },
+          'viewportOverlay.bottomRight': { $set: [] },
+        },
+        customizationService.Scope.Global
+      );
+
       toolbarService.updateSection('SpecialMeasures', [
         'CobbAngle',
         'CardioThoracicIndex',
@@ -478,15 +440,25 @@ function modeFactory({ modeConfiguration }) {
         cornerstoneViewportService,
         uiDialogService,
         uiModalService,
+        customizationService,
       } = servicesManager.services;
+
+      // Restore the global overlay customizations that were cleared on enter,
+      // so other modes (nova-desktop, etc.) continue to show their overlays.
+      OVERLAY_KEYS.forEach(key => {
+        const saved = _savedGlobalOverlays[key];
+        if (saved !== undefined) {
+          customizationService.setCustomizations(
+            { [key]: saved },
+            customizationService.Scope.Global
+          );
+        }
+      });
+      _savedGlobalOverlays = {};
 
       _activatePanelTriggersSubscriptions.forEach(sub => sub.unsubscribe());
       _activatePanelTriggersSubscriptions = [];
       _stackScrollActivated = false;
-
-      // Limpiar el estado por-viewport del cine para no arrastrar viewports
-      // "abiertos" a una próxima entrada al modo.
-      cineViewportStore.clear();
 
       if (_thumbnailPreloadSub) {
         _thumbnailPreloadSub.unsubscribe();
@@ -520,21 +492,9 @@ function modeFactory({ modeConfiguration }) {
           'The mode does not support studies that ONLY include the following modalities: SM, ECG, SEG, RTSTRUCT',
       };
     },
-    /**
-     * Mode Routes are used to define the mode's behavior. A list of Mode Route
-     * that includes the mode's path and the layout to be used. The layout will
-     * include the components that are used in the layout. For instance, if the
-     * default layoutTemplate is used (id: '@ohif/extension-default.layoutTemplateModule.viewerLayout')
-     * it will include the leftPanels, rightPanels, and viewports. However, if
-     * you define another layoutTemplate that includes a Footer for instance,
-     * you should provide the Footer component here too. Note: We use Strings
-     * to reference the component's ID as they are registered in the internal
-     * ExtensionManager. The template for the string is:
-     * `${extensionId}.{moduleType}.${componentId}`.
-     */
     routes: [
       {
-        path: 'desktop',
+        path: 'anonimized',
         layoutTemplate: ({ location, servicesManager }) => {
           return {
             id: ohif.layout,

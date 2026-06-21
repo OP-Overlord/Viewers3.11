@@ -292,8 +292,12 @@ function NovaPanelStudyBrowser() {
       const displaySet = displaySetService.getDisplaySetByUID(uid);
       if (displaySet?.unsupported) return;
 
-      // Already cached → skip
-      if (thumbnailCache.has(uid)) return;
+      // If already in module-level cache, sync to React state and skip network load.
+      // preloadThumbnails may have populated the cache before this effect ran.
+      if (thumbnailCache.has(uid)) {
+        setThumbnailImageSrcMap(prev => (prev[uid] ? prev : { ...prev, [uid]: thumbnailCache.get(uid)! }));
+        return;
+      }
 
       const imageIds = dataSource.getImageIdsForDisplaySet(dSet);
       const imageId = getImageIdForThumbnail(displaySet, imageIds);
@@ -309,13 +313,8 @@ function NovaPanelStudyBrowser() {
       }
 
       if (thumbnailSrc) {
-        // Write through to module-level cache
         thumbnailCache.set(uid, thumbnailSrc);
-
-        setThumbnailImageSrcMap(prev => ({
-          ...prev,
-          [uid]: thumbnailSrc,
-        }));
+        setThumbnailImageSrcMap(prev => ({ ...prev, [uid]: thumbnailSrc }));
       }
     });
   }, [displaySetService, dataSource, getImageSrc, hasLoadedViewports]);
@@ -354,6 +353,39 @@ function NovaPanelStudyBrowser() {
         );
         sortStudyInstances(mapped);
         setDisplaySets(mapped);
+
+        // Load thumbnails for any display set that arrived via DISPLAY_SETS_CHANGED
+        // but was not yet handled by DISPLAY_SETS_ADDED (e.g. already-existing display sets).
+        if (!hasLoadedViewports || !dataSource) return;
+        changedDisplaySets.forEach(async (dSet: any) => {
+          const uid = dSet.displaySetInstanceUID;
+          if (thumbnailNoImageModalities.includes(dSet.Modality) && dSet.thumbnailSrc !== null) return;
+          const displaySet = displaySetService.getDisplaySetByUID(uid);
+          if (displaySet?.unsupported) return;
+
+          if (thumbnailCache.has(uid)) {
+            setThumbnailImageSrcMap(prev => (prev[uid] ? prev : { ...prev, [uid]: thumbnailCache.get(uid)! }));
+            return;
+          }
+
+          const imageIds = dataSource.getImageIdsForDisplaySet(displaySet);
+          const imageId = getImageIdForThumbnail(displaySet, imageIds);
+          if (!imageId) return;
+
+          let { thumbnailSrc } = displaySet;
+          if (!thumbnailSrc && displaySet.getThumbnailSrc) {
+            thumbnailSrc = await (displaySet as any).getThumbnailSrc({ getImageSrc });
+          }
+          if (!thumbnailSrc) {
+            thumbnailSrc = await getImageSrc(imageId);
+            displaySet.thumbnailSrc = thumbnailSrc;
+          }
+
+          if (thumbnailSrc) {
+            thumbnailCache.set(uid, thumbnailSrc);
+            setThumbnailImageSrcMap(prev => ({ ...prev, [uid]: thumbnailSrc }));
+          }
+        });
       }
     );
 
@@ -381,6 +413,9 @@ function NovaPanelStudyBrowser() {
     viewports,
     displaySetService,
     mapDisplaySetsWithTracking,
+    hasLoadedViewports,
+    dataSource,
+    getImageSrc,
   ]);
 
   // ─── Subscribe to new display sets for thumbnail loading ───
@@ -396,7 +431,12 @@ function NovaPanelStudyBrowser() {
           const displaySet = displaySetService.getDisplaySetByUID(uid);
           if (displaySet?.unsupported) return;
           if (options?.madeInClient) setJumpToDisplaySet(uid);
-          if (thumbnailCache.has(uid)) return;
+
+          // If already in module-level cache, sync to React state and skip network load.
+          if (thumbnailCache.has(uid)) {
+            setThumbnailImageSrcMap(prev => (prev[uid] ? prev : { ...prev, [uid]: thumbnailCache.get(uid)! }));
+            return;
+          }
 
           const imageIds = dataSource.getImageIdsForDisplaySet(displaySet);
           const imageId = getImageIdForThumbnail(displaySet, imageIds);

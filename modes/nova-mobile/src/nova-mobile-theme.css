@@ -1,0 +1,206 @@
+/*
+ * NOVA MOBILE - Professional Medical Viewer Theme
+ * Matches the desktop (nova-desktop) look & feel, adapted for mobile viewports.
+ * All rules are scoped to .theme-nova-mobile applied on #root during onModeEnter.
+ */
+
+/* ============================================================ */
+/* COLOR PALETTE (mirrors nova-desktop)                          */
+/* ============================================================ */
+.theme-nova-mobile {
+  --nm-bg: #000000;
+  --nm-bg-elevated: #0a0a0a;
+  --nm-bg-panel: #111111;
+  --nm-primary: #4a9eff;
+  --nm-primary-hover-bg: rgba(74, 158, 255, 0.1);
+  --nm-primary-active-bg: rgba(74, 158, 255, 0.15);
+  --nm-text: #ffffff;
+  --nm-text-secondary: #7b8b9f;
+  --nm-text-muted: #5a6b7f;
+  --nm-border: #1a2940;
+  --nm-border-strong: #253649;
+}
+
+/* ============================================================ */
+/* GLOBAL BACKGROUND                                             */
+/* ============================================================ */
+
+/* Force body to pure black while in mobile mode */
+body:has(.theme-nova-mobile) {
+  background-color: var(--nm-bg) !important;
+}
+
+/* Main layout wrapper */
+.theme-nova-mobile .flex.flex-col.bg-black {
+  background-color: var(--nm-bg) !important;
+}
+
+/* ============================================================ */
+/* HEADER / NAVBAR                                               */
+/* ============================================================ */
+
+/* Replace the navy bg-primary-dark with pure black + bottom border */
+.theme-nova-mobile nav.bg-primary-dark,
+.theme-nova-mobile nav[class*='bg-primary-dark'] {
+  background-color: var(--nm-bg) !important;
+  border-bottom: 1px solid var(--nm-border) !important;
+}
+
+/* Back-arrow icon: match desktop secondary text color */
+.theme-nova-mobile nav svg {
+  color: var(--nm-text-secondary);
+}
+
+/* ============================================================ */
+/* MOBILE TOOLBAR BUTTONS                                        */
+/* ============================================================ */
+
+/*
+ * The mobile toolbar buttons are direct <button> children of
+ * .mobile-toolbar-scroll inside <nav>.
+ * We style them here so the component code is untouched.
+ */
+
+/* Base button */
+.theme-nova-mobile .mobile-toolbar-scroll button {
+  border: 1px solid var(--nm-border) !important;
+  background-color: transparent !important;
+  color: var(--nm-text-secondary) !important;
+  border-radius: 6px;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  min-width: 52px;
+}
+
+/* Icons inherit parent color */
+.theme-nova-mobile .mobile-toolbar-scroll button svg {
+  color: inherit !important;
+}
+
+/* Labels inherit parent color */
+.theme-nova-mobile .mobile-toolbar-scroll button span {
+  color: inherit !important;
+  font-size: 10px;
+}
+
+/* Hover state (inactive buttons) */
+.theme-nova-mobile .mobile-toolbar-scroll button:not(:disabled):hover {
+  border-color: var(--nm-primary) !important;
+  background-color: var(--nm-primary-hover-bg) !important;
+  color: var(--nm-primary) !important;
+}
+
+/*
+ * Active state: the component sets bg-primary + text-black via Tailwind.
+ * Override those classes here to match the desktop blue style.
+ */
+.theme-nova-mobile .mobile-toolbar-scroll button.bg-primary,
+.theme-nova-mobile .mobile-toolbar-scroll button[class*='bg-primary'] {
+  border-color: var(--nm-primary) !important;
+  background-color: var(--nm-primary-active-bg) !important;
+  color: var(--nm-primary) !important;
+}
+
+/* Active: text-black override */
+.theme-nova-mobile .mobile-toolbar-scroll button.text-black,
+.theme-nova-mobile .mobile-toolbar-scroll button span.text-black {
+  color: var(--nm-primary) !important;
+}
+
+/* Active: icon text-black override */
+.theme-nova-mobile .mobile-toolbar-scroll button svg.text-black {
+  color: var(--nm-primary) !important;
+}
+
+/* Active hover */
+.theme-nova-mobile .mobile-toolbar-scroll button.bg-primary:hover,
+.theme-nova-mobile .mobile-toolbar-scroll button[class*='bg-primary']:hover {
+  background-color: rgba(74, 158, 255, 0.25) !important;
+}
+
+/* Disabled buttons */
+.theme-nova-mobile .mobile-toolbar-scroll button:disabled {
+  opacity: 0.4;
+}
+
+/* ============================================================ */
+/* BOTTOM PANEL                                                  */
+/* ============================================================ */
+
+/* Resize handle between viewport and bottom panel */
+.theme-nova-mobile [class*='hover:bg-primary'][class*='cursor-row-resize'] {
+  background-color: var(--nm-border) !important;
+}
+
+.theme-nova-mobile [class*='hover:bg-primary'][class*='cursor-row-resize']:hover {
+  background-color: var(--nm-primary) !important;
+}
+
+/* ============================================================ */
+/* SCROLLBARS                                                    */
+/* ============================================================ */
+
+.theme-nova-mobile *::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.theme-nova-mobile *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.theme-nova-mobile *::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 2px;
+}
+
+.theme-nova-mobile *::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* ============================================================ */
+/* THUMBNAIL LIST — SELECTION TOOLTIP & RING                     */
+/* ============================================================ */
+
+/*
+ * The series-info tooltip shown on single-tap over a thumbnail uses
+ * yellow/orange Tailwind classes (bg-yellow-900/90, border-yellow-500/30,
+ * text-yellow-100, text-yellow-200/70). Override them to match the blue
+ * palette of the rest of the viewer.
+ */
+
+/* Tooltip container background: dark navy with slight opacity */
+.theme-nova-mobile .bg-yellow-900\/90 {
+  background-color: rgba(10, 18, 32, 0.95) !important;
+}
+
+/* Tooltip bottom border: blue instead of yellow */
+.theme-nova-mobile .border-yellow-500\/30 {
+  border-color: rgba(74, 158, 255, 0.3) !important;
+}
+
+/* Tooltip primary text: pure white */
+.theme-nova-mobile .text-yellow-100 {
+  color: #ffffff !important;
+}
+
+/* Tooltip secondary text: muted blue-gray */
+.theme-nova-mobile .text-yellow-200\/70 {
+  color: rgba(123, 139, 159, 0.85) !important;
+}
+
+/*
+ * Selected-thumbnail ring: ring-yellow-400 → blue primary.
+ * Tailwind v3 uses --tw-ring-color as a CSS variable for ring-{color}.
+ */
+.theme-nova-mobile .ring-yellow-400 {
+  --tw-ring-color: #4a9eff;
+}
+
+/* ============================================================ */
+/* FOCUS STATES                                                  */
+/* ============================================================ */
+
+.theme-nova-mobile *:focus-visible {
+  outline: 2px solid var(--nm-primary);
+  outline-offset: 2px;
+}

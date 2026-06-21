@@ -3,11 +3,14 @@
  * Provides mobile-specific commands like share functionality
  */
 
+import { pdfViewportRegistry } from './pdfViewportRegistry';
+
 const getCommandsModule = ({ servicesManager, extensionManager }) => {
   const actions = {
     /**
-     * Captures the current viewport and opens the native share dialog
-     * Falls back to download if Web Share API is not available
+     * Captures the current viewport and opens the native share dialog.
+     * If the active viewport is a PDF, shares the PDF file instead of a canvas image.
+     * Falls back to download if Web Share API is not available.
      */
     shareViewportImage: async ({ viewportId }) => {
       const { cornerstoneViewportService, viewportGridService } = servicesManager.services;
@@ -21,7 +24,31 @@ const getCommandsModule = ({ servicesManager, extensionManager }) => {
       }
 
       try {
-        // Get the viewport element
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+        // ── PDF viewport path ─────────────────────────────────────────────────
+        const pdfBlobUrl = pdfViewportRegistry.get(activeViewportId);
+        if (pdfBlobUrl) {
+          const pdfBlob = await fetch(pdfBlobUrl).then(r => r.blob());
+          const fileName = `documento-medico-${timestamp}.pdf`;
+          const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], title: 'Documento Médico' });
+            } catch (error: any) {
+              if (error.name !== 'AbortError') {
+                console.warn('PDF share failed, falling back to download:', error);
+                downloadFile(pdfBlobUrl, fileName);
+              }
+            }
+          } else {
+            downloadFile(pdfBlobUrl, fileName);
+          }
+          return;
+        }
+
+        // ── Image viewport path ───────────────────────────────────────────────
         const viewportInfo = cornerstoneViewportService.getViewportInfo(activeViewportId);
         if (!viewportInfo) {
           console.warn('Viewport info not found');
@@ -34,70 +61,55 @@ const getCommandsModule = ({ servicesManager, extensionManager }) => {
           return;
         }
 
-        // Get the canvas from the viewport
         const canvas = viewport.getCanvas();
         if (!canvas) {
           console.warn('Canvas not found');
           return;
         }
 
-        // Convert canvas to blob
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob(
-            blob => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error('Failed to create blob'));
-              }
+            (b: Blob | null) => {
+              if (b) resolve(b);
+              else reject(new Error('Failed to create blob'));
             },
             'image/jpeg',
             0.95
           );
         });
 
-        // Create file from blob
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `imagen-medica-${timestamp}.jpg`;
         const file = new File([blob], fileName, { type: 'image/jpeg' });
 
-        // Check if Web Share API is available and supports files
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({
-              files: [file],
-              title: 'Imagen Médica',
-              text: 'Compartir imagen del estudio',
-            });
-            console.debug('Image shared successfully');
-          } catch (error) {
-            // User cancelled or share failed
+            await navigator.share({ files: [file], title: 'Imagen Médica', text: 'Compartir imagen del estudio' });
+          } catch (error: any) {
             if (error.name !== 'AbortError') {
               console.warn('Share failed, falling back to download:', error);
-              downloadImage(blob, fileName);
+              const url = URL.createObjectURL(blob);
+              downloadFile(url, fileName);
+              URL.revokeObjectURL(url);
             }
           }
         } else {
-          // Fallback to direct download
-          console.debug('Web Share API not available, downloading instead');
-          downloadImage(blob, fileName);
+          const url = URL.createObjectURL(blob);
+          downloadFile(url, fileName);
+          URL.revokeObjectURL(url);
         }
       } catch (error) {
-        console.error('Error capturing viewport:', error);
+        console.error('Error sharing viewport:', error);
       }
     },
   };
 
-  // Helper function to download the image
-  function downloadImage(blob: Blob, fileName: string) {
-    const url = URL.createObjectURL(blob);
+  function downloadFile(url: string, fileName: string) {
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 
   const definitions = {

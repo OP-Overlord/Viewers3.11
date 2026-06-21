@@ -57,30 +57,30 @@ window.config = {
             contentF: ({ instance }) => instance.SeriesDescription,
           },
           {
-            id: 'StudyDateOverlay',
+            id: 'SeriesDateOverlay',
             customizationType: 'ohif.overlayItem',
             label: 'Fecha:',
-            title: 'Fecha del estudio',
+            title: 'Fecha de la serie',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
               const visible =
                 servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return visible !== false && instance?.StudyDate;
+              return visible !== false && instance?.SeriesDate;
             },
-            contentF: ({ instance, formatters: { formatDate } }) => formatDate(instance.StudyDate),
+            contentF: ({ instance, formatters: { formatDate } }) => formatDate(instance.SeriesDate),
           },
           {
-            id: 'StudyTimeOverlay',
+            id: 'SeriesTimeOverlay',
             customizationType: 'ohif.overlayItem',
             label: 'Hora:',
-            title: 'Hora de adquisición',
+            title: 'Hora de la serie',
             color: 'white',
             condition: ({ instance, servicesManager }) => {
               const visible =
                 servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return visible !== false && instance?.StudyTime;
+              return visible !== false && instance?.SeriesTime;
             },
-            contentF: ({ instance, formatters: { formatTime } }) => formatTime(instance.StudyTime),
+            contentF: ({ instance, formatters: { formatTime } }) => formatTime(instance.SeriesTime),
           },
         ],
       },
@@ -95,6 +95,8 @@ window.config = {
             label: 'Paciente:',
             title: 'Nombre del paciente',
             color: 'white',
+
+            
             condition: ({ instance, servicesManager }) => {
               const visible =
                 servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
@@ -125,18 +127,37 @@ window.config = {
             condition: ({ instance, servicesManager }) => {
               const visible =
                 servicesManager?.services?.customizationService?.get('viewportOverlay.visible');
-              return visible !== false && instance?.PatientAge;
+              return visible !== false && (instance?.PatientBirthDate || instance?.PatientAge);
             },
             contentF: ({ instance }) => {
+              if (instance.PatientBirthDate) {
+                const birth = instance.PatientBirthDate;
+                const ref = instance.StudyDate || (() => {
+                  const now = new Date();
+                  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+                })();
+                const by = parseInt(birth.slice(0, 4), 10);
+                const bm = parseInt(birth.slice(4, 6), 10);
+                const bd = parseInt(birth.slice(6, 8), 10);
+                const ry = parseInt(ref.slice(0, 4), 10);
+                const rm = parseInt(ref.slice(4, 6), 10);
+                const rd = parseInt(ref.slice(6, 8), 10);
+                let years = ry - by;
+                if (rm < bm || (rm === bm && rd < bd)) years--;
+                if (years >= 1) return `${years} años`;
+                let months = (ry * 12 + rm) - (by * 12 + bm);
+                if (rd < bd) months--;
+                if (months >= 1) return `${months} meses`;
+                const days = Math.floor(
+                  (new Date(ry, rm - 1, rd).getTime() - new Date(by, bm - 1, bd).getTime()) / 86400000
+                );
+                const weeks = Math.floor(days / 7);
+                return weeks >= 1 ? `${weeks} semanas` : `${days} días`;
+              }
               const rawAge = instance.PatientAge;
               const value = parseInt(rawAge.slice(0, 3), 10);
               const unit = rawAge.slice(3);
-              const unitMap = {
-                Y: 'años',
-                M: 'meses',
-                W: 'semanas',
-                D: 'días',
-              };
+              const unitMap = { Y: 'años', M: 'meses', W: 'semanas', D: 'días' };
               return `${value} ${unitMap[unit] || ''}`;
             },
           },
@@ -175,13 +196,15 @@ window.config = {
     thumbnail: 75,
     prefetch: 25,
   },
-  modesConfiguration: {
-    'nova-desktop': {
-      clinicalNewsEnabled: false,
-    },
-  },
   defaultDataSourceName: 'nova',
   dataSources: [
+    {
+      namespace: '@ohif/extension-default.dataSourcesModule.dicomlocal',
+      sourceName: 'dicomlocal',
+      configuration: {
+        friendlyName: 'dicom local',
+      },
+    },
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'nova',

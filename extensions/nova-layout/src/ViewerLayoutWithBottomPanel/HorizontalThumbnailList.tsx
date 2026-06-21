@@ -275,6 +275,11 @@ const HorizontalThumbnailList = () => {
   const [loadingThumbnails, setLoadingThumbnails] = useState<Set<string>>(new Set());
   const [selectedDisplaySetUID, setSelectedDisplaySetUID] = useState<string | null>(null);
 
+  // Tracks UIDs that permanently failed thumbnail generation to prevent infinite retry loops.
+  // (When a load fails the uid stays out of thumbnailImageSrcMap, so without this guard the
+  // effect would re-run on every loadingThumbnails state change and retry forever.)
+  const failedThumbnailsRef = useRef<Set<string>>(new Set());
+
   // Refs for touch handling - improved to detect swipe vs tap
   const lastTapRef = useRef<{ time: number; id: string | null }>({ time: 0, id: null });
   const touchStartRef = useRef<{ x: number; y: number; id: string | null }>({
@@ -379,7 +384,8 @@ const HorizontalThumbnailList = () => {
     DEBUG_THUMBNAILS && console.log(`${LOG_PREFIX} Total displaySets: ${allDisplaySets.length}`);
 
     const currentDisplaySets = allDisplaySets.filter(
-      (ds: any) => !thumbnailNoImageModalities.includes(ds.Modality)
+      // Keep display sets that either have images OR provide their own thumbnail renderer
+      (ds: any) => !thumbnailNoImageModalities.includes(ds.Modality) || typeof ds.getThumbnailSrc === 'function'
     );
     DEBUG_THUMBNAILS &&
       console.log(`${LOG_PREFIX} Filtered displaySets (with images): ${currentDisplaySets.length}`);
@@ -439,12 +445,46 @@ const HorizontalThumbnailList = () => {
         DEBUG_THUMBNAILS && console.log(`${LOG_PREFIX} Skipping ${modality} - already loading`);
         return;
       }
+      if (failedThumbnailsRef.current.has(uid)) {
+        DEBUG_THUMBNAILS && console.log(`${LOG_PREFIX} Skipping ${modality} - permanently failed`);
+        return;
+      }
 
-      // Get imageIds
+      // Get imageIds.
+      // Primary source: dSet.imageIds — the same list the main viewport already uses/loaded.
+      // Fallback: dataSource.getImageIdsForDisplaySet — may return a different or empty list
+      // for some display set types (tracked, video, composite SOP classes).
       DEBUG_THUMBNAILS && console.log(`${LOG_PREFIX} Getting imageIds for ${modality}...`);
-      const imageIds = dataSource?.getImageIdsForDisplaySet?.(dSet);
+      let imageIds: string[] | undefined = dSet.imageIds;
+      if (!imageIds?.length) {
+        imageIds = dataSource?.getImageIdsForDisplaySet?.(dSet);
+      }
 
       if (!imageIds?.length) {
+        // Display sets without imageIds (e.g. PDF) may provide a getThumbnailSrc function
+        // that renders its own preview (e.g. first PDF page via PDF.js).
+        if (typeof dSet.getThumbnailSrc === 'function') {
+          setLoadingThumbnails(prev => new Set(prev).add(uid));
+          try {
+            const src = await dSet.getThumbnailSrc();
+            if (src) {
+              setThumbnailImageSrcMap(prev => ({ ...prev, [uid]: src }));
+            } else {
+              failedThumbnailsRef.current.add(uid);
+            }
+          } catch (err) {
+            console.error(`${LOG_PREFIX} ✗ getThumbnailSrc failed for ${modality}:`, err);
+            failedThumbnailsRef.current.add(uid);
+          } finally {
+            setLoadingThumbnails(prev => {
+              const next = new Set(prev);
+              next.delete(uid);
+              return next;
+            });
+          }
+          return;
+        }
+
         DEBUG_THUMBNAILS &&
           console.warn(`${LOG_PREFIX} ✗ No imageIds for ${modality}! DisplaySet:`, {
             displaySetInstanceUID: uid,
@@ -452,6 +492,8 @@ const HorizontalThumbnailList = () => {
             instances: dSet.instances?.length,
             sopClassUIDs: dSet.sopClassUIDs,
           });
+        // Mark as permanently failed so we don't retry on every effect run
+        failedThumbnailsRef.current.add(uid);
         return;
       }
 
@@ -503,6 +545,9 @@ const HorizontalThumbnailList = () => {
         }
       } catch (error) {
         console.error(`${LOG_PREFIX} ✗ FAILED to load thumbnail for ${modality}:`, error);
+        // Prevent infinite retry: without this, the effect re-runs on every loadingThumbnails
+        // state change (because uid never enters thumbnailImageSrcMap) and retries forever.
+        failedThumbnailsRef.current.add(uid);
       } finally {
         setLoadingThumbnails(prev => {
           const next = new Set(prev);

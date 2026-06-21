@@ -198,6 +198,10 @@ const SidePanel = ({
 }: SidePanelProps) => {
   const [panelOpen, setPanelOpen] = useState(isExpanded);
   const [activeTabIndex, setActiveTabIndex] = useState(activeTabIndexProp ?? 0);
+  // Lazy-mount: don't render tab content until the panel has been opened at least once.
+  // After first open the content stays mounted (hidden via display:none) so scroll position
+  // and component state (e.g. thumbnail cache checks) are preserved on re-open.
+  const [hasEverOpened, setHasEverOpened] = useState(isExpanded);
 
   const [styleMap, setStyleMap] = useState(
     createStyleMap(
@@ -222,6 +226,9 @@ const SidePanel = ({
   const updatePanelOpen = useCallback(
     (isOpen: boolean) => {
       setPanelOpen(isOpen);
+      if (isOpen) {
+        setHasEverOpened(true);
+      }
       if (isOpen !== panelOpen) {
         // only fire events for changes
         if (isOpen && onOpen) {
@@ -459,19 +466,25 @@ const SidePanel = ({
       className={classnames(className, baseClasses)}
       style={style}
     >
-      {panelOpen ? (
-        <>
-          {getOpenStateComponent()}
-          {tabs.map((tab, tabIndex) => {
-            if (tabIndex === activeTabIndex) {
-              return <tab.content key={tabIndex} />;
-            }
+      {panelOpen && getOpenStateComponent()}
+
+      {!panelOpen && <React.Fragment>{getCloseStateComponent()}</React.Fragment>}
+
+      {/* Lazy-mount: only render after first open, then keep alive hidden to preserve state */}
+      {hasEverOpened &&
+        tabs.map((tab, tabIndex) => {
+          if (tabIndex !== activeTabIndex) {
             return null;
-          })}
-        </>
-      ) : (
-        <React.Fragment>{getCloseStateComponent()}</React.Fragment>
-      )}
+          }
+          return (
+            <div
+              key={tabIndex}
+              style={{ display: panelOpen ? 'flex' : 'none', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
+            >
+              <tab.content />
+            </div>
+          );
+        })}
     </div>
   );
 };

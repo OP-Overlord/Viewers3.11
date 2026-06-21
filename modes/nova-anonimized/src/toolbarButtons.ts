@@ -217,7 +217,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-window-level-nova',
       label: 'Contraste',
-      tooltip: 'Ajustar brillo y contraste arrastrando sobre la imagen',
+      tooltip: 'Contraste',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -228,7 +228,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-length',
       label: 'Longitud',
-      tooltip: 'Mide la distancia en línea recta entre dos puntos',
+      tooltip: 'Longitud',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -239,7 +239,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-bidirectional',
       label: 'Bidireccional',
-      tooltip: 'Mide los ejes mayor y menor perpendiculares de una lesión',
+      tooltip: 'Bidireccional',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -250,7 +250,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-annotate',
       label: 'Señalador',
-      tooltip: 'Coloca una flecha con una etiqueta de texto sobre un hallazgo',
+      tooltip: 'Señalador',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -261,7 +261,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-ellipse',
       label: 'Elipse',
-      tooltip: 'Región elíptica con estadísticas de píxeles (media, área y desviación)',
+      tooltip: 'Región de interés elíptica',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -272,7 +272,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-circle',
       label: 'Circulo',
-      tooltip: 'Región circular con estadísticas de píxeles (media, área y desviación)',
+      tooltip: 'Circulo',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -283,7 +283,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-tool-freehand-roi',
       label: 'ROI Mano Alzada',
-      tooltip: 'Región de interés dibujada a mano alzada con estadísticas de píxeles',
+      tooltip: 'Región de interés a mano alzada',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -294,7 +294,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-tool-spline-roi',
       label: 'ROI Spline',
-      tooltip: 'Región de interés con contorno de curvas suaves (spline)',
+      tooltip: 'Región de interés con curvas spline',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -305,7 +305,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-tool-livewire',
       label: 'Herramienta Livewire',
-      tooltip: 'Contorno asistido que se ajusta automáticamente a los bordes de la imagen',
+      tooltip: 'Herramienta de contorno inteligente',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -316,7 +316,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-zoom',
       label: 'Zoom',
-      tooltip: 'Acercar o alejar la imagen · Atajo: Z',
+      tooltip: 'Zoom',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -328,7 +328,7 @@ const toolbarButtons: Button[] = [
       type: 'tool',
       icon: 'tool-move',
       label: 'Desplazar',
-      tooltip: 'Desplazar la imagen dentro del viewport',
+      tooltip: 'Desplazar',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -339,7 +339,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-mpr',
       label: 'MPR',
-      tooltip: 'Reconstrucción multiplanar (axial, sagital y coronal)',
+      tooltip: 'MPR',
       commands: {
         commandName: 'toggleHangingProtocol',
         commandOptions: {
@@ -356,7 +356,7 @@ const toolbarButtons: Button[] = [
       type: 'tool',
       icon: 'tool-3d-rotate',
       label: 'Rotar 3D',
-      tooltip: 'Rotar libremente el volumen en 3D',
+      tooltip: 'Rotación 3D',
       commands: setToolActiveToolbar,
     },
   },
@@ -395,7 +395,7 @@ const toolbarButtons: Button[] = [
       type: 'tool',
       icon: 'tool-crosshair',
       label: 'Triangular',
-      tooltip: 'Líneas de referencia cruzadas entre planos',
+      tooltip: 'Triangular',
       commands: {
         commandName: 'setToolActiveToolbar',
         commandOptions: {
@@ -412,7 +412,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-reset',
       label: 'Resetear',
-      tooltip: 'Restablecer zoom, desplazamiento y contraste · Atajo: 0',
+      tooltip: 'Resetear Vista',
       commands: 'resetViewport',
       evaluate: 'evaluate.action',
     },
@@ -423,7 +423,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-rotate-right',
       label: 'Rotar',
-      tooltip: 'Rotar 90° en sentido horario · Atajo: R',
+      tooltip: 'Rotar 90 grados en el sentido horario',
       commands: 'rotateViewportCW',
       evaluate: 'evaluate.action',
     },
@@ -434,7 +434,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-flip-horizontal',
       label: 'Flip',
-      tooltip: 'Voltear la imagen horizontalmente · Atajo: H',
+      tooltip: 'Flip',
       commands: 'flipViewportHorizontal',
       evaluate: 'evaluate.viewportProperties.toggle',
     },
@@ -473,7 +473,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-referenceLines',
       label: 'Lineas de referencia',
-      tooltip: 'Mostrar líneas de referencia entre viewports',
+      tooltip: 'Lineas de referencia',
       commands: 'toggleEnabledDisabledToolbar',
       listeners: {
         [ViewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED]: callbacks('ReferenceLines'),
@@ -505,7 +505,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-stack-scroll',
       label: 'Stack',
-      tooltip: 'Desplazarse entre los cortes de la serie',
+      tooltip: 'Stack',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -516,7 +516,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-invert',
       label: 'Invertir',
-      tooltip: 'Invertir la escala de grises · Atajo: I',
+      tooltip: 'Invertir',
       commands: 'invertViewport',
       evaluate: 'evaluate.viewportProperties.toggle',
     },
@@ -527,7 +527,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-probe',
       label: 'Probe',
-      tooltip: 'Mostrar el valor del píxel en un punto',
+      tooltip: 'Probe',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -538,10 +538,8 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-cine-nova',
       label: 'Cine',
-      tooltip: 'Reproducir el cine en el viewport seleccionado · Atajo: Espacio',
-      // Mismo comportamiento que el atajo: muestra y reproduce el cine en el
-      // viewport seleccionado (no en todos). Ver novaCineTogglePlay.
-      commands: 'novaCineTogglePlay',
+      tooltip: 'Cine',
+      commands: 'toggleCine',
       evaluate: 'evaluate.cine',
     },
   },
@@ -557,7 +555,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -575,7 +573,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -592,7 +590,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -609,7 +607,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -626,7 +624,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -637,7 +635,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-angle',
       label: 'Angulo',
-      tooltip: 'Mide el ángulo formado por tres puntos (dos líneas)',
+      tooltip: 'Angulo',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -654,7 +652,7 @@ const toolbarButtons: Button[] = [
         'evaluate.cornerstoneTool',
         {
           name: 'evaluate.modality.supported',
-          supportedModalities: ['DX', 'CR', 'RX', 'CT', 'MR'],
+          supportedModalities: ['DX', 'CR', 'RX'],
         },
       ],
     },
@@ -665,7 +663,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-magnify',
       label: 'Zoom-in',
-      tooltip: 'Lupa para ampliar una zona puntual',
+      tooltip: 'Zoom-in',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -676,7 +674,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-rectangle',
       label: 'Rectangulo',
-      tooltip: 'Región rectangular con estadísticas de píxeles (media, área y desviación)',
+      tooltip: 'Rectangulo',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -687,7 +685,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'tool-calibration',
       label: 'Calibración',
-      tooltip: 'Calibrar la escala con una distancia conocida',
+      tooltip: 'Calibración',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
@@ -698,7 +696,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'dicom-tag-browser',
       label: 'Buscador DICOM Tag',
-      tooltip: 'Explorar las etiquetas DICOM de la imagen',
+      tooltip: 'Buscador DICOM Tag',
       commands: 'openDICOMTagViewer',
     },
   },
@@ -736,7 +734,7 @@ const toolbarButtons: Button[] = [
     props: {
       icon: 'icon-tool-window-region',
       label: 'Contraste de un región',
-      tooltip: 'Ajustar el contraste según una región seleccionada',
+      tooltip: 'Contraste de un región',
       commands: setToolActiveToolbar,
       evaluate: 'evaluate.cornerstoneTool',
     },
