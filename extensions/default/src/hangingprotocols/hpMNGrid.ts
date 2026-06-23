@@ -4,6 +4,18 @@ import { seriesWithImages } from './utils/seriesSelectors';
 import { viewportOptions } from './utils/viewportOptions';
 
 /**
+ * Opciones de viewport para mnGrid que, al cargar cada serie, posicionan el
+ * viewport en el corte MEDIO (en vez del primero) usando el preset 'middle'
+ * de initialImageOptions (ver CornerstoneViewportService._getInitialImageIndex).
+ */
+const viewportOptionsMiddleSlice = {
+  ...viewportOptions,
+  initialImageOptions: {
+    preset: 'middle',
+  },
+};
+
+/**
  * Sync group configuration for hydrating segmentations across viewports
  * that share the same frame of reference
  * @type {Types.HangingProtocol.SyncGroup}
@@ -40,6 +52,10 @@ export const hpMN: Types.HangingProtocol.Protocol = {
     viewportOptions: {
       viewportType: 'stack',
       toolGroupId: 'default',
+      // Posicionar en el corte medio al añadir viewports con el layout tool.
+      initialImageOptions: {
+        preset: 'middle',
+      },
       syncGroups: [HYDRATE_SEG_SYNC_GROUP],
     },
     displaySets: [
@@ -67,7 +83,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -75,7 +91,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 1,
@@ -84,7 +100,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 2,
@@ -93,7 +109,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 3,
@@ -121,7 +137,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -129,7 +145,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -138,7 +154,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -166,7 +182,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -174,7 +190,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 1,
@@ -202,7 +218,7 @@ export const hpMN: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -244,7 +260,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -252,7 +268,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 1,
@@ -261,7 +277,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 2,
@@ -270,7 +286,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 3,
@@ -279,7 +295,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 4,
@@ -288,7 +304,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 5,
@@ -297,7 +313,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 6,
@@ -306,7 +322,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 7,
@@ -334,7 +350,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
       },
       viewports: [
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               id: 'defaultDisplaySetId',
@@ -342,7 +358,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 1,
@@ -351,7 +367,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 2,
@@ -360,7 +376,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 3,
@@ -369,7 +385,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 4,
@@ -378,7 +394,7 @@ export const hpMN8: Types.HangingProtocol.Protocol = {
           ],
         },
         {
-          viewportOptions,
+          viewportOptions: viewportOptionsMiddleSlice,
           displaySets: [
             {
               matchedDisplaySetsIndex: 5,

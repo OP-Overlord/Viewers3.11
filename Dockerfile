@@ -62,7 +62,10 @@ COPY --parents ./addOns/package.json ./addOns/*/*/package.json ./extensions/*/pa
 RUN bun pm cache rm
 #ENV BUN_INSTALL_DEV=true
 
-RUN yarn install --no-save
+# --network-timeout amplio para sobrevivir a redes/DNS lentos o intermitentes
+# (evita que descargas grandes —p.ej. los binarios de @napi-rs/canvas— queden a
+# medias y corrompan la cache de yarn -> ENOENT .yarn-metadata.json).
+RUN yarn install --no-save --network-timeout 1000000
 
 #ENV BUN_INSTALL_DEV=true
 #RUN bun add -d cross-env@^7

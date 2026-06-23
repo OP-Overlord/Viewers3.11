@@ -49,7 +49,18 @@ function WrappedCinePlayer({
         // displaySet.FrameRate corresponds to DICOM tag (0018,1063) which is defined as the the frame time in milliseconds
         // So a bit of math to get the actual frame rate.
         frameRate = Math.round(1000 / displaySet.FrameRate);
-        if (appConfig.autoPlayCine) {
+        // El autoplay solo debe activar el cine en el viewport ACTIVO. Como
+        // setIsCineEnabled es global, este handler corre para todos los
+        // viewports; sin esta guarda, cada serie con FrameRate (p. ej. XA)
+        // arrancaría a la vez en todos. Además, no reactivar si el usuario cerró
+        // explícitamente el cine de este viewport (isViewportCineClosed se
+        // limpia al volver a activar el cine).
+        const isActiveViewport = viewportId === viewportGridService.getActiveViewportId();
+        if (
+          appConfig.autoPlayCine &&
+          isActiveViewport &&
+          !cineService.isViewportCineClosed(viewportId)
+        ) {
           shouldAutoPlay = true;
           isPlaying = true;
         }

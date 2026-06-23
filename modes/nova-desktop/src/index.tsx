@@ -5,6 +5,7 @@ import { id } from './id';
 import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
 import AudioCinePlayer from '../../../extensions/nova-cine/src/AudioCinePlayer';
 import { cineViewportStore } from '../../../extensions/nova-cine/src/cineViewportStore';
+import hpXA from './hpXA';
 import './nova-theme.css';
 
 /**
@@ -185,6 +186,38 @@ function modeFactory({ modeConfiguration }) {
         cineViewportStore.open(activeViewportId);
         cineService.setCine({ id: activeViewportId, isPlaying: true });
       });
+
+      // Comando usado por el hanging protocol de XA (hpXA): muestra el cine en
+      // el viewport activo pero PAUSADO.
+      commandsManager.registerCommand('CORNERSTONE', 'novaCineShowPaused', () => {
+        const { cineService, viewportGridService } = servicesManager.services;
+        const activeViewportId = viewportGridService.getActiveViewportId();
+        if (!activeViewportId) {
+          return;
+        }
+        cineService.setIsCineEnabled(true);
+        cineService.clearViewportCineClosed(activeViewportId);
+        cineViewportStore.open(activeViewportId);
+        cineService.setCine({ id: activeViewportId, isPlaying: false });
+
+        // autoPlayCine puede arrancar la reproducción al cargar el display set
+        // (de forma asíncrona, a veces tras la red). Forzamos el pausado durante
+        // una ventana corta y acotada para garantizar que quede en pausa.
+        let ticks = 0;
+        const enforcePause = setInterval(() => {
+          const cine = cineService.getState()?.cines?.[activeViewportId];
+          if (cine?.isPlaying) {
+            cineService.setCine({ id: activeViewportId, isPlaying: false });
+          }
+          if (++ticks >= 8) {
+            clearInterval(enforcePause); // ~2s (8 x 250ms)
+          }
+        }, 250);
+      });
+
+      // Registrar el hanging protocol de XA (1x1 + cine pausado) solo en este
+      // modo. Su id ya está listado en `hangingProtocol` (máxima prioridad).
+      servicesManager.services.hangingProtocolService.addProtocol(hpXA.id, hpXA);
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
@@ -585,7 +618,7 @@ function modeFactory({ modeConfiguration }) {
     /** List of extensions that are used by the mode */
     extensions: extensionDependencies,
     /** HangingProtocol used by the mode */
-    hangingProtocol: ['@ohif/mnGrid', 'default'],
+    hangingProtocol: ['@nova/hpXA', '@ohif/mnGrid', 'default'],
     /** SopClassHandlers used by the mode */
     sopClassHandlers: [
       dicomvideo.sopClassHandler,
