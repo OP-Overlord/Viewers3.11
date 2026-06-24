@@ -3,6 +3,10 @@ import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import { id } from './id';
 import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
+import {
+  mountConnectivityAgent,
+  unmountConnectivityAgent,
+} from '../../../extensions/nova-connectivity/src';
 import './nova-theme.css';
 
 // Allow this mode by excluding non-imaging modalities such as SR, SEG
@@ -117,6 +121,10 @@ function modeFactory({ modeConfiguration }) {
       if (root && !root.classList.contains('theme-nova')) {
         root.classList.add('theme-nova');
       }
+
+      // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
+      // latencia alta o descarga lenta. No invasivo y puramente informativo.
+      mountConnectivityAgent();
 
       measurementService.clearMeasurements();
 
@@ -432,6 +440,9 @@ function modeFactory({ modeConfiguration }) {
       const root = document.getElementById('root');
       root?.classList.remove('theme-nova');
       root?.classList.remove('nova-hide-overlays');
+
+      // Retirar el agente de conectividad y detener el monitor.
+      unmountConnectivityAgent();
 
       const {
         toolGroupService,

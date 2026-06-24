@@ -8,6 +8,10 @@ import { cineViewportStore } from '../../../extensions/nova-cine/src/cineViewpor
 import hpXA from './hpXA';
 import hpMammo, { registerMammoAttributes } from './hpMammo';
 import hpDoc from './hpDoc';
+import {
+  mountConnectivityAgent,
+  unmountConnectivityAgent,
+} from '../../../extensions/nova-connectivity/src';
 import './nova-theme.css';
 
 /**
@@ -152,6 +156,10 @@ function modeFactory({ modeConfiguration }) {
       if (root && !root.classList.contains('theme-nova')) {
         root.classList.add('theme-nova');
       }
+
+      // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
+      // latencia alta o descarga lenta. No invasivo y puramente informativo.
+      mountConnectivityAgent();
 
       measurementService.clearMeasurements();
 
@@ -508,6 +516,9 @@ function modeFactory({ modeConfiguration }) {
       const root = document.getElementById('root');
       root?.classList.remove('theme-nova');
       root?.classList.remove('nova-hide-overlays');
+
+      // Retirar el agente de conectividad y detener el monitor.
+      unmountConnectivityAgent();
 
       const {
         toolGroupService,

@@ -89,6 +89,10 @@ export type ConstraintValue =
 export type Constraint = {
   // This value exactly
   equals?: ConstraintValue;
+  // NOTE: el validador registrado es `doesNotEqual` (ver
+  // HangingProtocolService/lib/comparators.js + validator.js). `notEquals` NO
+  // tiene validador y lanzaría en runtime; se mantiene por compat de tipos.
+  doesNotEqual?: ConstraintValue;
   notEquals?: ConstraintValue;
   // A caseless contains
   containsI?: string;

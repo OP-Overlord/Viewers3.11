@@ -3,6 +3,10 @@ import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import hpMobile from './hpMobile';
 import { id } from './id';
+import {
+  mountConnectivityAgent,
+  unmountConnectivityAgent,
+} from '../../../extensions/nova-connectivity/src';
 import './nova-mobile-theme.css';
 
 /**
@@ -166,6 +170,11 @@ function modeFactory({ modeConfiguration }) {
         root.classList.add('theme-nova-mobile');
       }
 
+      // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
+      // latencia alta o descarga lenta. Especialmente útil en móvil (redes
+      // celulares). No invasivo y puramente informativo.
+      mountConnectivityAgent();
+
       measurementService.clearMeasurements();
 
       // Limit Cornerstone image cache to prevent OOM on mobile devices.
@@ -194,6 +203,9 @@ function modeFactory({ modeConfiguration }) {
       // Remove mobile theme class
       const root = document.getElementById('root');
       root?.classList.remove('theme-nova-mobile');
+
+      // Retirar el agente de conectividad y detener el monitor.
+      unmountConnectivityAgent();
 
       const {
         toolGroupService,
