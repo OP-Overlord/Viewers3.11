@@ -17,6 +17,12 @@ function WrappedCinePlayer({
   const [dynamicInfo, setDynamicInfo] = useState(null);
   const [appConfig] = useAppConfig();
   const isMountedRef = useRef(null);
+  // displaySets cuyo autoplay ya se evaluó. `newDisplaySetHandler` se recrea en
+  // cada cambio de `cines` (depende de él), por lo que sin esta guarda el
+  // autoplay se re-dispararía en cada setCine y pisaría el pause manual del
+  // usuario (p. ej. en XA, que tiene FrameRate). Sólo se auto-reproduce una vez
+  // por displaySet; después, play/pausa los gobierna el usuario.
+  const autoPlayHandledRef = useRef(new Set<string>());
 
   const cineHandler = () => {
     if (!cines?.[viewportId] || !enabledVPElement) {
@@ -56,14 +62,20 @@ function WrappedCinePlayer({
         // explícitamente el cine de este viewport (isViewportCineClosed se
         // limpia al volver a activar el cine).
         const isActiveViewport = viewportId === viewportGridService.getActiveViewportId();
+        // El autoplay sólo se evalúa la PRIMERA vez que se ve este displaySet.
+        // En recreaciones posteriores de este handler (cada cambio de `cines`)
+        // no se vuelve a forzar isPlaying, de modo que el pause manual persiste.
+        const alreadyHandled = autoPlayHandledRef.current.has(displaySetInstanceUID);
         if (
           appConfig.autoPlayCine &&
           isActiveViewport &&
-          !cineService.isViewportCineClosed(viewportId)
+          !cineService.isViewportCineClosed(viewportId) &&
+          !alreadyHandled
         ) {
           shouldAutoPlay = true;
           isPlaying = true;
         }
+        autoPlayHandledRef.current.add(displaySetInstanceUID);
       }
 
       // check if the displaySet is dynamic and set the dynamic info

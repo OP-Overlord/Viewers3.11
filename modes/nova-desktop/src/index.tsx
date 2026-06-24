@@ -6,6 +6,8 @@ import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/pr
 import AudioCinePlayer from '../../../extensions/nova-cine/src/AudioCinePlayer';
 import { cineViewportStore } from '../../../extensions/nova-cine/src/cineViewportStore';
 import hpXA from './hpXA';
+import hpMammo, { registerMammoAttributes } from './hpMammo';
+import hpDoc from './hpDoc';
 import './nova-theme.css';
 
 /**
@@ -196,28 +198,31 @@ function modeFactory({ modeConfiguration }) {
           return;
         }
         cineService.setIsCineEnabled(true);
-        cineService.clearViewportCineClosed(activeViewportId);
         cineViewportStore.open(activeViewportId);
         cineService.setCine({ id: activeViewportId, isPlaying: false });
 
-        // autoPlayCine puede arrancar la reproducción al cargar el display set
-        // (de forma asíncrona, a veces tras la red). Forzamos el pausado durante
-        // una ventana corta y acotada para garantizar que quede en pausa.
-        let ticks = 0;
-        const enforcePause = setInterval(() => {
-          const cine = cineService.getState()?.cines?.[activeViewportId];
-          if (cine?.isPlaying) {
-            cineService.setCine({ id: activeViewportId, isPlaying: false });
-          }
-          if (++ticks >= 8) {
-            clearInterval(enforcePause); // ~2s (8 x 250ms)
-          }
-        }, 250);
+        // Suprime el autoplay del CinePlayer al cargar el HP de XA: la barra
+        // queda visible (cineViewportStore) pero el cine NO arranca solo. Debe
+        // ir DESPUÉS de setIsCineEnabled, que limpia el set de "cine cerrado".
+        // El CinePlayer marca este displaySet como ya gestionado, por lo que el
+        // primer play/pausa del usuario se respeta sin re-disparar autoplay.
+        cineService.setViewportCineClosed(activeViewportId);
       });
 
       // Registrar el hanging protocol de XA (1x1 + cine pausado) solo en este
       // modo. Su id ya está listado en `hangingProtocol` (máxima prioridad).
       servicesManager.services.hangingProtocolService.addProtocol(hpXA.id, hpXA);
+
+      // Registrar el hanging protocol de Mamografía (MG) y sus atributos
+      // normalizados de identificación (MGLaterality/MGView). Layout adaptativo
+      // 2x2 / 1x2 / 1x1 según la cantidad de imágenes (ver hpMammo).
+      registerMammoAttributes({ servicesManager });
+      servicesManager.services.hangingProtocolService.addProtocol(hpMammo.id, hpMammo);
+
+      // Registrar el hanging protocol de Documento (DOC): documento a la
+      // izquierda y series NO-DOC complementarias a la derecha (1/2/3 según
+      // cuántas haya). Su id ya está listado en `hangingProtocol`.
+      servicesManager.services.hangingProtocolService.addProtocol(hpDoc.id, hpDoc);
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
@@ -618,7 +623,7 @@ function modeFactory({ modeConfiguration }) {
     /** List of extensions that are used by the mode */
     extensions: extensionDependencies,
     /** HangingProtocol used by the mode */
-    hangingProtocol: ['@nova/hpXA', '@ohif/mnGrid', 'default'],
+    hangingProtocol: ['@nova/hpXA', '@nova/hpDoc', '@nova/hpMammo', '@ohif/mnGrid', 'default'],
     /** SopClassHandlers used by the mode */
     sopClassHandlers: [
       dicomvideo.sopClassHandler,

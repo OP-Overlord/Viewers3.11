@@ -301,17 +301,16 @@ const AudioCinePlayer: React.FC<AudioCinePlayerProps> = ({
     // los clics por los márgenes transparentes hacia la imagen.
     <div
       ref={rootRef}
-      // pb-10 sube la barra por encima de la fila de controles del viewport
-      // (ViewportActionCorners en bottom-[3px], p. ej. el botón de ajustes de
-      // ventana), evitando el solape sin importar el tamaño del viewport, y la
-      // despega del borde inferior.
-      className="pointer-events-none absolute bottom-0 left-0 z-50 w-full px-2 pb-10"
+      // pb-2 deja la barra lo más abajo posible despegándola apenas del borde
+      // inferior del viewport (sin sobreponerse a él).
+      className="pointer-events-none absolute bottom-0 left-0 z-50 w-full px-2 pb-2"
     >
       {/* El contenedor raíz se mantiene montado siempre (necesario para resolver
           el viewportId desde el DOM); la barra solo se muestra si este viewport
-          está abierto en el store por-viewport. */}
+          está abierto en el store por-viewport. max-w-xl limita el ancho para que
+          la barra centrada no tape el selector de ventanas DICOM (esquina). */}
       {isOpen && (
-      <div className="bg-muted/95 text-foreground border-input/50 pointer-events-auto mx-auto flex w-full max-w-3xl select-none items-center gap-1.5 rounded-lg border px-2 py-0.5 shadow-lg backdrop-blur">
+      <div className="bg-muted/95 text-foreground border-input/50 pointer-events-auto mx-auto flex w-full max-w-xl select-none items-center gap-1.5 rounded-lg border px-2 py-0.5 shadow-lg backdrop-blur">
         <Button
           variant="ghost"
           size="icon"
