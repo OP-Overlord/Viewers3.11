@@ -148,14 +148,30 @@ function modeFactory({ modeConfiguration }) {
      * Services and other resources.
      */
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }: withAppTypes) => {
-      const { measurementService, toolbarService, toolGroupService, customizationService } =
-        servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        customizationService,
+        studyPrefetcherService,
+      } = servicesManager.services;
 
       // 👉 Forzar clase del tema en el root
       const root = document.getElementById('root');
       if (root && !root.classList.contains('theme-nova')) {
         root.classList.add('theme-nova');
       }
+
+      // Prefetch en segundo plano: tras renderizar la primera imagen, precarga
+      // el resto del display set activo (y los más cercanos) sin bloquear la
+      // interacción. Se habilita explícitamente aquí (el servicio es singleton y
+      // viene deshabilitado por defecto; nova-mobile lo desactiva por memoria).
+      studyPrefetcherService?.setConfiguration?.({
+        enabled: true,
+        order: 'closest',
+        displaySetsCount: 2,
+        maxNumPrefetchRequests: 6,
+      } as any);
 
       // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
       // latencia alta o descarga lenta. No invasivo y puramente informativo.

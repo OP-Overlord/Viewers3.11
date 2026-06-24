@@ -68,11 +68,40 @@ module.exports = (env, argv, { SRC_DIR, ENTRY }) => {
     devtool: isProdBuild ? 'source-map' : 'cheap-module-source-map',
     entry: ENTRY,
     optimization: {
-      // splitChunks: {
-      //   // include all types of chunks
-      //   chunks: 'all',
-      // },
-      //runtimeChunk: 'single',
+      // Code splitting: separa el runtime y los vendors pesados en chunks propios
+      // para que el bundle de entrada (app) sea más pequeño, se descargue en
+      // paralelo y se cachee mejor entre releases (el vendor cambia menos que el
+      // código de la app). Reduce drásticamente el tiempo hasta que la UI pinta.
+      runtimeChunk: 'single',
+      splitChunks: {
+        chunks: 'all',
+        // Permite chunks grandes de vendor sin trocearlos en exceso.
+        maxAsyncRequests: 30,
+        maxInitialRequests: 30,
+        cacheGroups: {
+          // Cornerstone (core + tools + loaders) — lo más pesado del visor.
+          cornerstone: {
+            test: /[\\/]node_modules[\\/]@cornerstonejs[\\/]/,
+            name: 'vendor-cornerstone',
+            priority: 40,
+            reuseExistingChunk: true,
+          },
+          // React y su runtime.
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            name: 'vendor-react',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // Resto de dependencias de node_modules.
+          vendors: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: 10,
+            reuseExistingChunk: true,
+          },
+        },
+      },
       minimize: isProdBuild,
       sideEffects: false,
     },

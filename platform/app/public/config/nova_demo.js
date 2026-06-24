@@ -185,7 +185,11 @@ window.config = {
   addWindowLevelActionMenu: true,
   autoPlayCine: true,
 
-  maxNumberOfWebWorkers: 3,
+  // Tope de web workers de decodificación. El init usa min(hardwareConcurrency-1,
+  // este valor), así que en móviles de 4 núcleos sigue siendo ~3, mientras que en
+  // equipos de 8+ núcleos se acelera la decodificación en paralelo (prefetch y
+  // series multiframe).
+  maxNumberOfWebWorkers: 5,
 
   investigationalUseDialog: {
     option: 'never',
@@ -223,6 +227,22 @@ window.config = {
         staticWado: true,
         singlepart: 'pdf,video,bulkdata',
         dicomUploadEnabled: true,
+        // ── CARGA PROGRESIVA (HTJ2K) — listo para activar tras VERIFICAR el PACS ──
+        // La ruta progresiva ya está cableada en extensions/cornerstone/src/index.tsx
+        // (stack → { retrieveOptions: { single: { streaming:true, decodeLevel:1 } } }),
+        // pero solo se activa si el servidor entrega HTJ2K (transfer syntax
+        // 1.2.840.10008.1.2.4.201/202, MIME image/jhc), que SÍ permite decodificar
+        // una versión de baja resolución primero (primer render casi instantáneo).
+        // Verificar soporte con:
+        //   curl -sI -H 'Accept: multipart/related; type="image/jhc"' \
+        //     '<wadoRoot>/studies/<S>/series/<Se>/instances/<I>/frames/1'
+        // Si responde HTJ2K, sustituir el acceptHeader de abajo por este:
+        // acceptHeader: [
+        //   'multipart/related; type=application/pdf; q=0.6',
+        //   'multipart/related; type=image/jhc; q=1',   // HTJ2K (progresivo)
+        //   'multipart/related; type=image/jls; q=0.9', // fallback lossless
+        //   'multipart/related; type=application/octet-stream; q=0.5',
+        // ],
         acceptHeader: [
           'multipart/related; type=application/pdf; q=0.6',
           'multipart/related; type=image/jls; q=1',

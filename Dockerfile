@@ -75,7 +75,12 @@ COPY --link --exclude=yarn.lock --exclude=package.json --exclude=Dockerfile . .
 
 # Build here
 # After install it should hopefully be stable until the local directory changes
-ENV QUICK_BUILD true
+# QUICK_BUILD=true desactiva la minificación (Terser) y los sourcemaps para
+# acelerar builds de prueba. En producción debe ir en false para minificar el
+# bundle (mucho menor tras gzip/brotli -> carga más rápida). Override para un
+# build rápido de prueba: docker build --build-arg QUICK_BUILD=true ...
+ARG QUICK_BUILD=false
+ENV QUICK_BUILD=${QUICK_BUILD}
 # ENV GENERATE_SOURCEMAP=false
 ARG APP_CONFIG=config/nova_demo.js
 #ARG APP_CONFIG=config/demo.js

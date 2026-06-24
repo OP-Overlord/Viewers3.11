@@ -161,14 +161,24 @@ function modeFactory({ modeConfiguration }) {
     },
 
     onModeEnter: ({ servicesManager, extensionManager, commandsManager }: withAppTypes) => {
-      const { measurementService, toolbarService, toolGroupService, customizationService } =
-        servicesManager.services;
+      const {
+        measurementService,
+        toolbarService,
+        toolGroupService,
+        customizationService,
+        studyPrefetcherService,
+      } = servicesManager.services;
 
       // Apply mobile theme class (scopes all nova-mobile-theme.css rules)
       const root = document.getElementById('root');
       if (root && !root.classList.contains('theme-nova-mobile')) {
         root.classList.add('theme-nova-mobile');
       }
+
+      // Mantener el prefetch DESHABILITADO en móvil: el servicio es singleton y
+      // pudo quedar habilitado por nova-desktop/anonimized; aquí se fuerza off
+      // para respetar el cap de caché (200 MB) y la memoria limitada del móvil.
+      studyPrefetcherService?.setConfiguration?.({ enabled: false } as any);
 
       // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
       // latencia alta o descarga lenta. Especialmente útil en móvil (redes

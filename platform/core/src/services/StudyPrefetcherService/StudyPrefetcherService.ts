@@ -172,6 +172,21 @@ class StudyPrefetcherService extends PubSubService {
   }
 
   /**
+   * Updates the prefetcher configuration at runtime (merges into the current
+   * config). Useful for enabling/tuning prefetch per-mode, since the service is
+   * a singleton shared across modes. Call from a mode's onModeEnter BEFORE any
+   * display set renders (prefetch starts on the first render).
+   */
+  public setConfiguration(configuration: Partial<StudyPrefetcherConfig>): void {
+    Object.assign(this.config, configuration);
+  }
+
+  /** Returns a shallow copy of the current configuration. */
+  public getConfiguration(): StudyPrefetcherConfig {
+    return { ...this.config };
+  }
+
+  /**
    * The onModeExit returns the service to the initial state.
    */
   public onModeExit(): void {
