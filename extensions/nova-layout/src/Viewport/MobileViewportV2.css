@@ -70,6 +70,49 @@
   padding: 0 16px;
 }
 
+/* Barra de progreso de carga de la serie: muy sutil, fina y opaca, pegada al
+   borde inferior del viewport. Pista casi imperceptible + relleno azul tenue. */
+.mobile-v2-loadbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.05);
+  z-index: 12;
+  pointer-events: none;
+}
+
+.mobile-v2-loadbar-fill {
+  height: 100%;
+  background-color: rgba(74, 158, 255, 0.4);
+  transition: width 220ms ease;
+}
+
+/* Indicador vertical de posición de la instancia actual sobre la serie: muy
+   delgado y translúcido, pegado al borde derecho. Pista casi imperceptible +
+   thumb blanco tenue cuya posición/altura reflejan índice/total. */
+.mobile-v2-scrollindicator {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 3px;
+  width: 3px;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.06);
+  z-index: 11;
+  pointer-events: none;
+}
+
+.mobile-v2-scrollindicator-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.35);
+  transition: top 120ms ease;
+}
+
 /* Overlay para modalidades/dispositivos no soportados (placeholder informativo) */
 .mobile-v2-overlay--unsupported {
   background-color: rgba(0, 0, 0, 0.92);

@@ -232,6 +232,48 @@ function modeFactory({ modeConfiguration }) {
         mobileCineStore.toggle();
       });
 
+      // Toggle de herramienta: si el botón pulsado YA es la herramienta activa, la
+      // desactiva y cae al tool por defecto del viewport activo:
+      //  - StackScroll en series MULTI-instancia (permite recorrer cortes con 1 dedo)
+      //  - Desplazar (Pan) en series de UNA sola instancia (no hay nada que recorrer)
+      // Si no estaba activa, simplemente la activa. El binding por defecto de
+      // setToolActive (Primary) equivale a 1 dedo en táctil (igual que Pan inicial).
+      commandsManager.registerCommand('CORNERSTONE', 'novaMobileSetTool', ({ toolName }) => {
+        const { toolGroupService, viewportGridService, cornerstoneViewportService } =
+          servicesManager.services;
+        if (!toolName) {
+          return;
+        }
+        const { activeViewportId } = viewportGridService.getState();
+        // El modo móvil solo crea el tool group 'default' (ver initToolGroups).
+        const toolGroupId = 'default';
+        const toolGroup = toolGroupService.getToolGroup(toolGroupId);
+        if (!toolGroup || !toolGroup.hasTool(toolName)) {
+          return;
+        }
+
+        const activeTool = toolGroup.getActivePrimaryMouseButtonTool();
+
+        // Re-pulsar el botón activo → desactivar + tool por defecto.
+        if (activeTool === toolName) {
+          let numSlices = 1;
+          try {
+            const vp = cornerstoneViewportService.getCornerstoneViewport(activeViewportId);
+            numSlices = vp?.getNumberOfSlices?.() ?? 1;
+          } catch (_e) {
+            // viewport no-stack (PDF/SR/video): se queda en Pan
+          }
+          const fallback = numSlices > 1 ? 'StackScroll' : 'Pan';
+          if (fallback === toolName) {
+            return; // ya es el por defecto (p. ej. Pan en serie de 1 instancia)
+          }
+          commandsManager.runCommand('setToolActive', { toolName: fallback, toolGroupId });
+          return;
+        }
+
+        commandsManager.runCommand('setToolActive', { toolName, toolGroupId });
+      });
+
       // Register toolbar buttons
       toolbarService.register([...toolbarButtons]);
 

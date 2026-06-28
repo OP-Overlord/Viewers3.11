@@ -11,6 +11,16 @@ const MAX_SCALE = 5.0;
 const SCALE_STEP = 0.25;
 const INITIAL_SCALE = 0.5;
 
+// Espaciado del layout NATURAL (escala 1). Importante: estos valores viven DENTRO
+// del nodo escalado por transform, así que se escalan junto con las páginas → la
+// geometría del zoom es uniforme (clave para que el anclaje de scroll sea exacto).
+const PAGE_MARGIN = 8; // arriba + abajo de cada página
+const WRAP_PADDING = 4; // izquierda + derecha del wrapper
+
+// Lado máximo del bitmap de canvas (px). Evita agotar memoria/GPU en móvil al
+// renderizar a alta resolución (renderScale × devicePixelRatio puede dispararse).
+const MAX_CANVAS_SIDE = 4096;
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LoadState = 'fetching' | 'rendering' | 'ready' | 'error';
 type Size = { width: number; height: number };
@@ -27,29 +37,33 @@ function clamp(v: number, min: number, max: number): number {
 }
 
 // ─── PdfPage Component (Double-Buffered) ──────────────────────────────────────
+//
+// La página se DIMENSIONA en su tamaño NATURAL (escala 1, = `baseSize`). El zoom
+// visual lo aplica el `transform: scale()` del contenedor padre (`inner`), no el
+// tamaño CSS de la página. El bitmap del canvas se renderiza a `renderScale × dpr`
+// (acotado) para nitidez, pero su tamaño en pantalla siempre es `width/height:100%`
+// del box natural → el transform del padre lo escala sin recomputar layout.
 function PdfPage({
   pdf,
   pageNum,
-  visualScale,
   renderScale,
   isVisible,
   baseSize,
 }: {
   pdf: pdfjsLib.PDFDocumentProxy;
   pageNum: number;
-  visualScale: number;
   renderScale: number;
   isVisible: boolean;
   baseSize: Size | null;
 }) {
   const activeCanvasRef = useRef<HTMLCanvasElement>(null);
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
-  const [lastRenderedScale, setLastRenderedScale] = useState(0);
+  const lastRenderedScaleRef = useRef(0);
 
-  // High-res rendering logic triggered when renderScale changes and page is visible
+  // Render a alta resolución cuando cambia renderScale y la página es visible.
   useEffect(() => {
     if (!isVisible || !baseSize || !pdf) return;
-    if (renderScale === lastRenderedScale) return;
+    if (Math.abs(renderScale - lastRenderedScaleRef.current) < 0.001) return;
 
     let mounted = true;
 
@@ -58,15 +72,19 @@ function PdfPage({
         const page = await pdf.getPage(pageNum);
         if (!mounted) return;
 
-        if (renderTaskRef.current) renderTaskRef.current.cancel();
+        renderTaskRef.current?.cancel();
 
-        // 1. Render to offscreen canvas
-        const offscreenCanvas = document.createElement('canvas');
         const dpr = window.devicePixelRatio || 1;
-        const viewport = page.getViewport({ scale: renderScale * dpr });
+        const natural = page.getViewport({ scale: 1 });
+        // Tope de resolución: nunca exceder MAX_CANVAS_SIDE en el lado mayor.
+        const capScale = MAX_CANVAS_SIDE / Math.max(natural.width, natural.height);
+        const targetScale = Math.min(renderScale * dpr, capScale);
+        const viewport = page.getViewport({ scale: targetScale });
 
-        offscreenCanvas.width = viewport.width;
-        offscreenCanvas.height = viewport.height;
+        // 1. Render a canvas offscreen (doble buffer → sin parpadeo).
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = Math.ceil(viewport.width);
+        offscreenCanvas.height = Math.ceil(viewport.height);
         const ctx = offscreenCanvas.getContext('2d');
         if (!ctx) return;
 
@@ -76,16 +94,15 @@ function PdfPage({
         await task.promise;
         if (!mounted) return;
 
-        // 2. Draw offscreen buffer to active visible canvas (eliminates flicker)
+        // 2. Volcar el buffer al canvas visible.
         const activeCanvas = activeCanvasRef.current;
         if (activeCanvas) {
           activeCanvas.width = offscreenCanvas.width;
           activeCanvas.height = offscreenCanvas.height;
-          const activeCtx = activeCanvas.getContext('2d');
-          activeCtx?.drawImage(offscreenCanvas, 0, 0);
+          activeCanvas.getContext('2d')?.drawImage(offscreenCanvas, 0, 0);
         }
 
-        setLastRenderedScale(renderScale);
+        lastRenderedScaleRef.current = renderScale;
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
           console.warn(`[MobilePdf] Page ${pageNum} render error:`, err);
@@ -97,11 +114,14 @@ function PdfPage({
     return () => {
       mounted = false;
     };
-  }, [pdf, pageNum, renderScale, isVisible, baseSize, lastRenderedScale]);
+  }, [pdf, pageNum, renderScale, isVisible, baseSize]);
 
-  // CSS size based on visualScale
-  const width = baseSize ? `${baseSize.width * visualScale}px` : 'auto';
-  const height = baseSize ? `${baseSize.height * visualScale}px` : 'auto';
+  // Cancelar tarea de render pendiente al desmontar.
+  useEffect(() => () => renderTaskRef.current?.cancel(), []);
+
+  // Tamaño CSS NATURAL (el transform del padre aplica el zoom).
+  const width = baseSize ? `${baseSize.width}px` : 'auto';
+  const height = baseSize ? `${baseSize.height}px` : 'auto';
 
   return (
     <div
@@ -109,8 +129,8 @@ function PdfPage({
       style={{
         width,
         height,
-        padding: 0,
-        margin: '8px 0',
+        flexShrink: 0,
+        margin: `${PAGE_MARGIN}px 0`,
         position: 'relative',
         backgroundColor: '#fff',
         boxShadow: '0 2px 8px rgba(0,0,0,0.6)',
@@ -147,122 +167,55 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
   const [fetchProgress, setFetchProgress] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [visualScale, setVisualScale] = useState(INITIAL_SCALE);
+  // `scale` = ÚNICA fuente de verdad del zoom (aplicada como transform sobre `inner`).
+  // `renderScale` = escala "comprometida" para la nitidez del bitmap (se actualiza al
+  // terminar el gesto / al usar los botones, no en cada frame del pinch).
+  const [scale, setScale] = useState(INITIAL_SCALE);
   const [renderScale, setRenderScale] = useState(INITIAL_SCALE);
   const [baseSize, setBaseSize] = useState<Size | null>(null);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // To track which pages are currently visible (for lazy rendering)
+  // Páginas visibles (render perezoso).
   const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set([1]));
 
   const viewportElementRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useViewportRef(viewportId);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const pagesWrapperRef = useRef<HTMLDivElement | null>(null);
+  const sizerRef = useRef<HTMLDivElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
 
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
   const blobUrlRef = useRef<string | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  // Scroll a aplicar tras el commit de React (solo para zoom por botón).
   const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
 
-  // Apply scheduled scroll immediately after React commits the new DOM sizes
-  // but *before* the browser paints, eliminating any visual jumps to the top-left.
+  // Escala "viva" leída por los manejadores táctiles sin closures obsoletos.
+  const scaleRef = useRef(scale);
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
+  // Tamaño NATURAL (escala 1) del contenido: ancho de página + padding, alto =
+  // suma de páginas + márgenes. Asume páginas homogéneas (igual que el render).
+  const naturalW = baseSize ? baseSize.width + WRAP_PADDING * 2 : 0;
+  const naturalH = baseSize ? totalPages * (baseSize.height + PAGE_MARGIN * 2) : 0;
+  const naturalSizeRef = useRef({ w: naturalW, h: naturalH });
+  naturalSizeRef.current = { w: naturalW, h: naturalH };
+
+  // ── Aplicar el scroll pendiente (zoom por botón) antes de pintar ────────────
+  // El pinch ya ajusta el scroll en vivo (vía refs) y comitea la MISMA escala, así
+  // que tras su commit no hay pendiente → el scroll se queda donde lo dejó el gesto
+  // (sin saltos). Solo los botones encolan un scroll a aplicar aquí.
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
     if (pendingScrollRef.current && container) {
-      const pending = pendingScrollRef.current;
-      console.log('[PINCH-DEBUG] useLayoutEffect FIRING', {
-        pendingLeft: pending.left,
-        pendingTop: pending.top,
-        containerScrollWidth: container.scrollWidth,
-        containerScrollHeight: container.scrollHeight,
-        containerClientWidth: container.clientWidth,
-        containerClientHeight: container.clientHeight,
-        maxScrollLeft: container.scrollWidth - container.clientWidth,
-        maxScrollTop: container.scrollHeight - container.clientHeight,
-        visualScale,
-      });
-
-      if (pagesWrapperRef.current) {
-        pagesWrapperRef.current.style.transform = '';
-        pagesWrapperRef.current.style.transformOrigin = '';
-        pagesWrapperRef.current.style.willChange = 'auto';
-      }
-
-      // Force synchronous reflow: the browser must recalculate layout
-      // after clearing the CSS transform, otherwise it still thinks the
-      // content is small and clamps scroll to 0.
-      void container.offsetHeight;
-
-      console.log('[PINCH-DEBUG] useLayoutEffect AFTER reflow, BEFORE scroll set', {
-        scrollWidth: container.scrollWidth,
-        scrollHeight: container.scrollHeight,
-        clientWidth: container.clientWidth,
-        clientHeight: container.clientHeight,
-        maxScrollLeft: container.scrollWidth - container.clientWidth,
-        maxScrollTop: container.scrollHeight - container.clientHeight,
-      });
-
-      container.scrollLeft = pending.left;
-      container.scrollTop = pending.top;
-
-      console.log('[PINCH-DEBUG] useLayoutEffect AFTER setting scroll', {
-        actualScrollLeft: container.scrollLeft,
-        actualScrollTop: container.scrollTop,
-      });
-
+      container.scrollLeft = pendingScrollRef.current.left;
+      container.scrollTop = pendingScrollRef.current.top;
       pendingScrollRef.current = null;
-    } else {
-      console.log('[PINCH-DEBUG] useLayoutEffect called but NO pending scroll', {
-        hasPending: !!pendingScrollRef.current,
-        hasContainer: !!scrollContainerRef.current,
-        visualScale,
-      });
     }
-  }, [visualScale]);
-
-  // Store refs safely for async events
-  const visualScaleRef = useRef(visualScale);
-  useEffect(() => {
-    visualScaleRef.current = visualScale;
-  }, [visualScale]);
-
-  // ── DEBUG: Monitor scroll changes ──────────────────────────────────────────
-  useEffect(() => {
-    if (loadState !== 'ready') return;
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    let lastScrollLeft = container.scrollLeft;
-    let lastScrollTop = container.scrollTop;
-
-    const onScroll = () => {
-      const newLeft = container.scrollLeft;
-      const newTop = container.scrollTop;
-      const deltaLeft = newLeft - lastScrollLeft;
-      const deltaTop = newTop - lastScrollTop;
-
-      // Only log significant jumps (> 50px) to reduce noise
-      if (Math.abs(deltaLeft) > 50 || Math.abs(deltaTop) > 50) {
-        console.warn('[PINCH-DEBUG] SCROLL JUMP detected!', {
-          fromLeft: lastScrollLeft,
-          fromTop: lastScrollTop,
-          toLeft: newLeft,
-          toTop: newTop,
-          deltaLeft,
-          deltaTop,
-          timestamp: Date.now(),
-        });
-        console.trace('[PINCH-DEBUG] Scroll jump stack trace');
-      }
-      lastScrollLeft = newLeft;
-      lastScrollTop = newTop;
-    };
-
-    container.addEventListener('scroll', onScroll, { passive: true });
-    return () => container.removeEventListener('scroll', onScroll);
-  }, [loadState]);
+  }, [scale]);
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -272,9 +225,11 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
       pdfDocRef.current?.destroy();
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Fetch PDF bytes and load with PDF.js ─────────────────────────────────────
+  const renderedUrlDep = displaySets?.[0]?.renderedUrl;
   useEffect(() => {
     let cancelled = false;
 
@@ -285,6 +240,7 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
       setCurrentPage(1);
 
       try {
+        if (!displaySets?.[0]) throw new Error('Sin displaySet para el PDF');
         const resolvedUrl: string = await displaySets[0].renderedUrl;
         if (cancelled) return;
         setFallbackUrl(resolvedUrl);
@@ -345,7 +301,7 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
         pdfDocRef.current = pdfDoc;
         setTotalPages(pdfDoc.numPages);
 
-        // Fetch base size of page 1 to establish aspect ratio
+        // Tamaño base de la página 1 → relación de aspecto del layout.
         if (pdfDoc.numPages > 0) {
           const page1 = await pdfDoc.getPage(1);
           const vp1 = page1.getViewport({ scale: 1 });
@@ -366,72 +322,75 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
     return () => {
       cancelled = true;
     };
-  }, [displaySets[0].renderedUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderedUrlDep]);
 
-  // ── Pinch-to-zoom (Fixed) ───────────────────────────────────────────────────
+  // ── Pinch-to-zoom (modelo sizer + transform-origin 0 0) ─────────────────────
   //
-  // Use CSS `transform` on the inner wrappers during the pinch. When it completes,
-  // bake the scale into `visualScale`, adjust scroll perfectly so the center point
-  // remains unchanged, and finally trigger `renderScale` for a crisp high-res update.
-  //
+  // La escala es la ÚNICA fuente de verdad. El nodo `inner` (con las páginas a
+  // tamaño natural) se escala con `transform: scale(s)` y `transform-origin: 0 0`;
+  // el `sizer` reserva el área scrolleable (= natural × s). Como TODO el contenido
+  // (incluidos márgenes/padding) vive dentro del nodo escalado, el mapeo es uniforme:
+  //   punto-contenido c  →  pantalla = c·s − scroll
+  // por lo que anclar un punto bajo los dedos es exacto, sin "hornear" tamaños ni
+  // recomputar scroll en un sistema de coordenadas distinto (origen del bug previo:
+  // centrado condicional + márgenes que no escalaban + clamping).
   useEffect(() => {
     if (loadState !== 'ready') return;
     const container = scrollContainerRef.current;
-    const wrapper = pagesWrapperRef.current;
-    if (!container || !wrapper) return;
+    const sizer = sizerRef.current;
+    const inner = innerRef.current;
+    if (!container || !sizer || !inner) return;
 
     let startDist = 0;
     let startScale = 1;
-    let startScrollLeft = 0;
-    let startScrollTop = 0;
-
-    // Midpoint in client coordinates
-    let midClientX = 0;
-    let midClientY = 0;
-
-    let currentFactor = 1;
+    // Punto de contenido (coords escala 1) bajo el punto medio de los dedos.
+    let anchorContentX = 0;
+    let anchorContentY = 0;
+    // Offset del punto medio respecto al borde del contenedor (constante en el gesto).
+    let midOffsetX = 0;
+    let midOffsetY = 0;
+    let liveScale = 1;
     let gestureActive = false;
     let pinchEndTime = 0;
+
+    const applyLiveScale = (s: number) => {
+      liveScale = s;
+      const { w, h } = naturalSizeRef.current;
+      // Crecer el área scrolleable en vivo para que el anclaje no quede recortado.
+      sizer.style.width = `${w * s}px`;
+      sizer.style.height = `${h * s}px`;
+      inner.style.transform = `scale(${s})`;
+      // Anclar: el punto de contenido bajo los dedos cae en c·s; el scroll lo lleva
+      // de vuelta bajo el punto medio (offset respecto al contenedor).
+      container.scrollLeft = anchorContentX * s - midOffsetX;
+      container.scrollTop = anchorContentY * s - midOffsetY;
+    };
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 2) return;
       e.preventDefault();
 
       gestureActive = true;
-      currentFactor = 1;
-
-      midClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      midClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
       startDist = getTouchDist(e.touches);
-      startScale = visualScaleRef.current;
-      startScrollLeft = container.scrollLeft;
-      startScrollTop = container.scrollTop;
+      startScale = scaleRef.current;
+      liveScale = startScale;
 
       const rect = container.getBoundingClientRect();
-      const originX = startScrollLeft + (midClientX - rect.left);
-      const originY = startScrollTop + (midClientY - rect.top);
+      const midClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      midOffsetX = midClientX - rect.left;
+      midOffsetY = midClientY - rect.top;
+      // Punto de contenido bajo los dedos en escala 1.
+      anchorContentX = (container.scrollLeft + midOffsetX) / startScale;
+      anchorContentY = (container.scrollTop + midOffsetY) / startScale;
 
-      wrapper.style.transformOrigin = `${originX}px ${originY}px`;
-      wrapper.style.transform = 'scale(1)';
-      wrapper.style.willChange = 'transform';
-
-      console.log('[PINCH-DEBUG] touchstart (2 fingers)', {
-        startDist,
-        startScale,
-        startScrollLeft,
-        startScrollTop,
-        midClientX,
-        midClientY,
-        originX,
-        originY,
-        containerRect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-      });
+      inner.style.willChange = 'transform';
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      // Prevent single-touch drag instantly after zoom ends
-      if (e.touches.length === 1 && Date.now() - pinchEndTime < 400) {
+      // Tras un pinch, ignora el arrastre/scroll con el dedo que queda un instante.
+      if (e.touches.length === 1 && Date.now() - pinchEndTime < 350) {
         e.preventDefault();
         return;
       }
@@ -439,75 +398,30 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
       e.preventDefault();
 
       const dist = getTouchDist(e.touches);
-      currentFactor = clamp(dist / startDist, MIN_SCALE / startScale, MAX_SCALE / startScale);
-
-      // Smooth CSS scale during gesture
-      wrapper.style.transform = `scale(${currentFactor})`;
+      const next = clamp((dist / startDist) * startScale, MIN_SCALE, MAX_SCALE);
+      applyLiveScale(next);
     };
 
     const onPinchEnd = (e: TouchEvent) => {
-      console.log('[PINCH-DEBUG] touchend/touchcancel', {
-        touchesRemaining: e.touches.length,
-        gestureActive,
-        timeSincePinchEnd: Date.now() - pinchEndTime,
-        currentScrollLeft: container.scrollLeft,
-        currentScrollTop: container.scrollTop,
-        eventType: e.type,
-      });
-
-      // Block any touch-end shortly after pinch to prevent browser scroll snapping
-      // when the remaining finger is lifted.
-      if (!gestureActive && Date.now() - pinchEndTime < 400) {
+      // Ventana de gracia: bloquea el touch-end del segundo dedo (evita snap nativo).
+      if (!gestureActive && Date.now() - pinchEndTime < 350) {
         e.preventDefault();
-        console.log('[PINCH-DEBUG] touchend BLOCKED (post-pinch grace period)');
         return;
       }
-
       if (!gestureActive || e.touches.length >= 2) return;
-      e.preventDefault(); // Prevent browser default scroll behavior on pinch end
+      e.preventDefault();
+
       gestureActive = false;
       pinchEndTime = Date.now();
+      inner.style.willChange = 'auto';
 
-      const newScale = clamp(
-        parseFloat((startScale * currentFactor).toFixed(2)),
-        MIN_SCALE,
-        MAX_SCALE
-      );
-      const f = newScale / startScale;
-
-      // DO NOT remove wrapper.style.transform here! If we do, the browser will paint a frame
-      // with no transform (1.0x size) *before* React synchronously updates the node sizes,
-      // causing a violent flash to the top-left. We queue it for `useLayoutEffect`.
-
-      // Adjust scroll to maintain visual center
-      const rect = container.getBoundingClientRect();
-      const newScrollLeft = startScrollLeft * f + (midClientX - rect.left) * (f - 1);
-      const newScrollTop = startScrollTop * f + (midClientY - rect.top) * (f - 1);
-
-      console.log('[PINCH-DEBUG] PINCH END - computing new scroll', {
-        startScale,
-        currentFactor,
-        newScale,
-        f,
-        startScrollLeft,
-        startScrollTop,
-        midClientX,
-        midClientY,
-        rectLeft: rect.left,
-        rectTop: rect.top,
-        newScrollLeft,
-        newScrollTop,
-        currentScrollLeft: container.scrollLeft,
-        currentScrollTop: container.scrollTop,
-        wrapperTransform: wrapper.style.transform,
-        wrapperTransformOrigin: wrapper.style.transformOrigin,
-      });
-
-      // Queue instantaneous scroll layout calculation before browser repaints
-      pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
-
-      setVisualScale(newScale);
-      setRenderScale(newScale);
+      // Comitear la MISMA escala que ya está pintada en vivo. React re-renderiza el
+      // sizer/inner a esos mismos valores → sin cambio visual → SIN SALTO. El scroll
+      // ya quedó anclado por applyLiveScale, así que NO encolamos pendingScroll.
+      const committed = parseFloat(liveScale.toFixed(3));
+      scaleRef.current = committed;
+      setScale(committed);
+      setRenderScale(committed); // nitidez del bitmap al nivel final
     };
 
     container.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -520,14 +434,10 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
       container.removeEventListener('touchmove', onTouchMove);
       container.removeEventListener('touchend', onPinchEnd);
       container.removeEventListener('touchcancel', onPinchEnd);
-      if (wrapper) {
-        wrapper.style.transform = '';
-        wrapper.style.transformOrigin = '';
-      }
     };
   }, [loadState]);
 
-  // ── IntersectionObserver: Lazy rendering logic ──────────────────────────────
+  // ── IntersectionObserver: render perezoso + página actual ───────────────────
   useEffect(() => {
     if (loadState !== 'ready') return;
     observerRef.current?.disconnect();
@@ -559,25 +469,39 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
   }, [loadState, totalPages]);
 
   // ── Ref Callbacks ─────────────────────────────────────────────────────────────
-  const registerRef = useCallback((el: HTMLDivElement | null) => {
-    viewportElementRef.current = el;
-    if (el) viewportRef.register(el);
-  }, []);
+  const registerRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      viewportElementRef.current = el;
+      if (el) viewportRef.register(el);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
-  const changeScale = (newScale: number) => {
-    setVisualScale(newScale);
-    setRenderScale(newScale);
+  // Zoom por botón: ancla el centro del contenedor y encola el scroll para después
+  // del commit (useLayoutEffect), manteniendo el centro visual estable.
+  const applyScaleAnchored = (target: number) => {
+    const next = clamp(parseFloat(target.toFixed(3)), MIN_SCALE, MAX_SCALE);
+    const container = scrollContainerRef.current;
+    if (container) {
+      const midX = container.clientWidth / 2;
+      const midY = container.clientHeight / 2;
+      const cur = scaleRef.current;
+      const contentX = (container.scrollLeft + midX) / cur;
+      const contentY = (container.scrollTop + midY) / cur;
+      pendingScrollRef.current = {
+        left: contentX * next - midX,
+        top: contentY * next - midY,
+      };
+    }
+    scaleRef.current = next;
+    setScale(next);
+    setRenderScale(next);
   };
 
-  const zoomIn = () =>
-    changeScale(
-      clamp(parseFloat((visualScaleRef.current + SCALE_STEP).toFixed(2)), MIN_SCALE, MAX_SCALE)
-    );
-  const zoomOut = () =>
-    changeScale(
-      clamp(parseFloat((visualScaleRef.current - SCALE_STEP).toFixed(2)), MIN_SCALE, MAX_SCALE)
-    );
-  const zoomReset = () => changeScale(1.0);
+  const zoomIn = () => applyScaleAnchored(scaleRef.current + SCALE_STEP);
+  const zoomOut = () => applyScaleAnchored(scaleRef.current - SCALE_STEP);
+  const zoomReset = () => applyScaleAnchored(1.0);
 
   const openInNewTab = () => {
     const url = blobUrlRef.current || fallbackUrl;
@@ -667,7 +591,8 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
       className="flex h-full w-full flex-col bg-black"
       data-viewport-id={viewportId}
     >
-      {/* Scroll container */}
+      {/* Scroll container. touch-action: pan-x pan-y → permite scroll con 1 dedo y
+          deja que el handler de 2 dedos haga preventDefault del pinch nativo. */}
       <div
         ref={scrollContainerRef}
         style={{
@@ -676,30 +601,48 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
           overflow: 'auto',
           backgroundColor: '#1a1a1a',
           position: 'relative',
+          touchAction: 'pan-x pan-y',
         }}
       >
-        {/* Pages wrapper */}
+        {/* Sizer: reserva el área scrolleable (= natural × scale). */}
         <div
-          ref={pagesWrapperRef}
+          ref={sizerRef}
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            minWidth: 'max-content',
-            padding: '0 4px',
+            position: 'relative',
+            width: naturalW ? `${naturalW * scale}px` : '100%',
+            height: naturalH ? `${naturalH * scale}px` : 'auto',
+            // El fondo oscuro llena el viewport aunque el contenido sea pequeño.
+            minWidth: '100%',
+            minHeight: '100%',
           }}
         >
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-            <PdfPage
-              key={pageNum}
-              pdf={pdfDocRef.current!}
-              pageNum={pageNum}
-              visualScale={visualScale}
-              renderScale={renderScale}
-              isVisible={visiblePages.has(pageNum)}
-              baseSize={baseSize}
-            />
-          ))}
+          {/* Inner: páginas a tamaño NATURAL, escaladas por transform (origen 0 0). */}
+          <div
+            ref={innerRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: naturalW ? `${naturalW}px` : 'max-content',
+              transformOrigin: '0 0',
+              transform: `scale(${scale})`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: `0 ${WRAP_PADDING}px`,
+            }}
+          >
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <PdfPage
+                key={pageNum}
+                pdf={pdfDocRef.current!}
+                pageNum={pageNum}
+                renderScale={renderScale}
+                isVisible={visiblePages.has(pageNum)}
+                baseSize={baseSize}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -743,7 +686,7 @@ function MobilePdfViewport({ displaySets, viewportId = 'mobile-pdf-viewport' }) 
               textAlign: 'center',
             }}
           >
-            {Math.round(visualScale * 100)}%
+            {Math.round(scale * 100)}%
           </button>
           <ToolbarBtn
             onClick={zoomIn}

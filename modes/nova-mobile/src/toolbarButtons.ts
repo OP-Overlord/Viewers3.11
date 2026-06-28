@@ -7,6 +7,16 @@ export const setToolActiveToolbar = {
   },
 };
 
+// Comando móvil que activa la herramienta; pero si el botón YA está activo y se
+// vuelve a presionar, la desactiva y cae al tool por defecto: StackScroll en series
+// multi-instancia (para navegar) o Desplazar (Pan) en series de una sola instancia.
+// `commandOptions.toolName` también lo lee `getToolNameForButton` → mantiene el
+// resaltado de `evaluate.cornerstoneTool`.
+const toggleMobileTool = (toolName: string) => ({
+  commandName: 'novaMobileSetTool',
+  commandOptions: { toolName },
+});
+
 const toolbarButtons: Button[] = [
   {
     id: 'Pan',
@@ -16,7 +26,7 @@ const toolbarButtons: Button[] = [
       icon: 'tool-move',
       label: 'Desplazar',
       tooltip: 'Mueve la imagen dentro del visor',
-      commands: setToolActiveToolbar,
+      commands: toggleMobileTool('Pan'),
       evaluate: 'evaluate.cornerstoneTool',
     },
   },
@@ -27,7 +37,7 @@ const toolbarButtons: Button[] = [
       icon: 'tool-length',
       label: 'Medir',
       tooltip: 'Mide la distancia entre dos puntos',
-      commands: setToolActiveToolbar,
+      commands: toggleMobileTool('Length'),
       evaluate: 'evaluate.cornerstoneTool',
     },
   },
@@ -38,7 +48,7 @@ const toolbarButtons: Button[] = [
       icon: 'tool-window-level',
       label: 'Contraste',
       tooltip: 'Ajusta el contraste de la imagen',
-      commands: setToolActiveToolbar,
+      commands: toggleMobileTool('WindowLevel'),
       evaluate: 'evaluate.cornerstoneTool',
     },
   },

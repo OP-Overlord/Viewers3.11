@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Enums, eventTarget, getRenderingEngine, imageLoader } from '@cornerstonejs/core';
+import { Enums, eventTarget, getRenderingEngine, imageLoader, cache } from '@cornerstonejs/core';
 import { useViewportRef, useSystem } from '@ohif/core';
 import { setEnabledElement } from '@ohif/extension-cornerstone';
 
@@ -134,7 +134,7 @@ function areEqual(prevProps: any, nextProps: any): boolean {
 }
 
 const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
-  const { servicesManager } = useSystem();
+  const { servicesManager, commandsManager } = useSystem();
 
   // viewportId viene de viewportOptions.viewportId (igual que OHIFCornerstoneViewport)
   const { displaySets, dataSource, viewportOptions, displaySetOptions, initialImageIndex } = props;
@@ -153,6 +153,11 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
   // imageIds del viewport actual; el handler IMAGE_LOADED lo usa para saber si la
   // imagen que terminó de cargar pertenece a este viewport y forzar un re-render.
   const targetImageIdsRef = useRef<Set<string> | null>(null);
+  // ids de la serie ya cargados/decodificados (para la barra de progreso de carga).
+  const loadedIdsRef = useRef<Set<string>>(new Set());
+  // dsKey para el que ya se aplicó la herramienta por defecto (StackScroll/Pan).
+  // Evita re-aplicarla en re-renders de la MISMA serie (no pisa la elección del usuario).
+  const defaultToolDsKeyRef = useRef<string | null>(null);
   // true tras el primer IMAGE_RENDERED con voiRange válido. Controla cuándo se
   // oculta el spinner: lo mantenemos visible hasta que la imagen realmente se
   // renderiza (no solo hasta que setViewportData termina, que es sync pero la
@@ -176,6 +181,19 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
 
   const [status, setStatus] = useState<ViewportStatus>('idle');
   const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null);
+  // Progreso de carga de la serie activa. stackContextPrefetch carga TODA la serie
+  // en background tras abrir el viewport (la instancia media se muestra primero).
+  // total<=1 → sin barra. loaded===total → carga completa (barra oculta).
+  const [loadProgress, setLoadProgress] = useState<{ loaded: number; total: number }>({
+    loaded: 0,
+    total: 0,
+  });
+  // Posición de la instancia actual dentro de la serie (índice 0-based + total).
+  // Alimenta el indicador vertical lateral; total<=1 → sin indicador.
+  const [sliceInfo, setSliceInfo] = useState<{ index: number; total: number }>({
+    index: 0,
+    total: 0,
+  });
   // Info de cine de la serie cargada (null = sin cine). frameCount>1 habilita la
   // barra; autoPlay arranca solo en US/RF/XA.
   const [cineInfo, setCineInfo] = useState<{
@@ -371,6 +389,18 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
           (d: any) => d?.imageIds ?? []
         );
         targetImageIdsRef.current = new Set(allImageIds);
+
+        // Barra de progreso de carga: siembra con las imágenes ya en caché (p. ej.
+        // la media pre-cacheada, o frames de una visita previa). El resto se cuenta
+        // vía IMAGE_LOADED conforme stackContextPrefetch las trae en background.
+        const loadedSeed = new Set<string>();
+        for (const id of allImageIds) {
+          if (cache.getImageLoadObject(id)) {
+            loadedSeed.add(id);
+          }
+        }
+        loadedIdsRef.current = loadedSeed;
+        setLoadProgress({ loaded: loadedSeed.size, total: allImageIds.length });
         console.log(
           `← createViewportData OK (${(performance.now() - t0).toFixed(0)}ms)` +
             ` imageIds=${allImageIds.length} rendered=${usedRendered}`
@@ -500,6 +530,16 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
       // Cornerstone3D IMAGE_LOADED usa evt.detail.image.imageId
       const id: string = evt.detail?.image?.imageId ?? evt.detail?.imageId ?? '';
       if (!id || !targetImageIdsRef.current?.has(id)) return;
+
+      // Progreso de carga de la serie (barra inferior sutil).
+      if (!loadedIdsRef.current.has(id)) {
+        loadedIdsRef.current.add(id);
+        setLoadProgress({
+          loaded: loadedIdsRef.current.size,
+          total: targetImageIdsRef.current?.size ?? 0,
+        });
+      }
+
       const re = getRenderingEngine('OHIFCornerstoneRenderingEngine');
       if (!re) return;
       requestAnimationFrame(() => {
@@ -526,6 +566,15 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     const handleImageLoadFailed = (evt: any) => {
       const id: string = evt.detail?.imageId ?? evt.detail?.image?.imageId ?? '';
       if (id && !targetImageIdsRef.current?.has(id)) return;
+      // Cuenta el frame fallido como "resuelto" para que la barra de progreso no
+      // quede atascada por debajo del 100% si alguna imagen no carga.
+      if (id && !loadedIdsRef.current.has(id)) {
+        loadedIdsRef.current.add(id);
+        setLoadProgress({
+          loaded: loadedIdsRef.current.size,
+          total: targetImageIdsRef.current?.size ?? 0,
+        });
+      }
       console.error(
         `${LOG_PREFIX} ❌ IMAGE_LOAD_FAILED [${viewportId}] imageId=...${id.slice(-40)}`,
         evt.detail?.error ?? evt.detail
@@ -573,9 +622,32 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
         hasRenderedOkRef.current = true; // render REAL exitoso (cierra la recuperación)
         hasFirstRenderRef.current = true;
         setStatus('ready');
+        // Sembrar la posición inicial (instancia media); STACK_NEW_IMAGE puede haber
+        // disparado antes de montar el listener, así que leemos el valor actual aquí.
+        updateSliceInfo();
         console.log(`${LOG_PREFIX} ✅ Primer render OK → status=ready [${viewportId}]`);
       }
     };
+
+    // ── Posición de la instancia actual dentro de la serie ───────────────────
+    // Lee índice/total del viewport cornerstone para el indicador vertical lateral.
+    const updateSliceInfo = () => {
+      const reS = getRenderingEngine('OHIFCornerstoneRenderingEngine');
+      const vpS = reS?.getViewport(viewportId) as any;
+      if (!vpS) return;
+      try {
+        const index = vpS.getCurrentImageIdIndex?.() ?? 0;
+        const total =
+          vpS.getNumberOfSlices?.() ?? vpS.getImageIds?.()?.length ?? 0;
+        setSliceInfo({ index, total });
+      } catch {
+        // viewport aún no listo
+      }
+    };
+
+    // STACK_NEW_IMAGE dispara sobre el elemento al navegar de instancia (scroll,
+    // cine, scrub). El listener está acotado al element → no hace falta filtrar id.
+    const handleStackNewImage = () => updateSliceInfo();
 
     // ── Recuperación ante fallo de render WebGL/vtk ──────────────────────────
     // El PRIMER render del actor color sobre el contexto/estado vtk recién creado
@@ -629,6 +701,8 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     eventTarget.addEventListener(Enums.Events.IMAGE_LOAD_FAILED, handleImageLoadFailed);
     // IMAGE_RENDERED: dispara sobre el elemento DOM del viewport (no eventTarget).
     element.addEventListener(Enums.Events.IMAGE_RENDERED as any, handleImageRendered);
+    // STACK_NEW_IMAGE: cambio de instancia → actualiza el indicador de posición.
+    element.addEventListener(Enums.Events.STACK_NEW_IMAGE as any, handleStackNewImage);
 
     // ── Gate de dimensiones ────────────────────────────────────────────────
     // En mobile el layout puede estar incompleto en el primer render; Cornerstone
@@ -666,6 +740,7 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
       eventTarget.removeEventListener(Enums.Events.IMAGE_LOADED, handleImageLoaded);
       eventTarget.removeEventListener(Enums.Events.IMAGE_LOAD_FAILED, handleImageLoadFailed);
       element.removeEventListener(Enums.Events.IMAGE_RENDERED as any, handleImageRendered);
+      element.removeEventListener(Enums.Events.STACK_NEW_IMAGE as any, handleStackNewImage);
       window.removeEventListener('error', handleGlobalError);
       element.removeEventListener('webglcontextlost', handleContextLost, true);
 
@@ -690,6 +765,26 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ─── Herramienta por defecto al cargar una serie ──────────────────────────
+  // StackScroll en series multi-instancia (navegar cortes), Pan en serie única.
+  // Se aplica una vez por serie cuando el viewport queda listo. CLAVE: la PRIMERA
+  // serie la carga el hanging protocol (no el tap de miniatura), así que el
+  // `loadDisplaySet` de HorizontalThumbnailList NO corre para ella → sin esto, la
+  // primera serie quedaba en Pan (default de initToolGroups). Aquí cubrimos TODAS
+  // las cargas (primera y siguientes) de forma idempotente.
+  useEffect(() => {
+    if (status !== 'ready' || !cineInfo) return;
+    if (defaultToolDsKeyRef.current === cineInfo.dsKey) return;
+    defaultToolDsKeyRef.current = cineInfo.dsKey;
+    const toolName = cineInfo.frameCount > 1 ? 'StackScroll' : 'Pan';
+    try {
+      commandsManager.runCommand('setToolActive', { toolName, toolGroupId: 'default' });
+    } catch (_e) {
+      // tool group aún no listo; se reintenta en el próximo ready
+      defaultToolDsKeyRef.current = null;
+    }
+  }, [status, cineInfo, commandsManager]);
+
   // ─── Reacción a cambios REALES de displaySet (post-montaje) ───────────────
   // Solo se dispara cuando displaySets/viewportOptions/dataSource cambian de
   // verdad. React.memo + areEqual garantiza que el componente NO se re-renderiza
@@ -703,6 +798,7 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     recoveryPendingRef.current = false;
     hasRenderedOkRef.current = false;
     hasFirstRenderRef.current = false;
+    setSliceInfo({ index: 0, total: 0 });
     setStatus('loading');
     loadAbortRef.current?.abort();
     const abort = new AbortController();
@@ -778,6 +874,42 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
           <span className="mobile-v2-error-text">Error al cargar la imagen</span>
         </div>
       )}
+
+      {/* Barra de progreso de carga de la serie: sutil, fina y opaca, pegada al
+          borde inferior. Solo en series multi-instancia mientras stackContextPrefetch
+          aún trae frames en background (se oculta al completar). */}
+      {status === 'ready' &&
+        loadProgress.total > 1 &&
+        loadProgress.loaded < loadProgress.total && (
+          <div className="mobile-v2-loadbar" aria-hidden="true">
+            <div
+              className="mobile-v2-loadbar-fill"
+              style={{ width: `${(loadProgress.loaded / loadProgress.total) * 100}%` }}
+            />
+          </div>
+        )}
+
+      {/* Indicador vertical de posición: línea fina y translúcida en el borde
+          derecho. El "thumb" marca dónde está la instancia actual dentro de la
+          serie. Solo en series multi-instancia (total>1). */}
+      {status === 'ready' &&
+        sliceInfo.total > 1 &&
+        (() => {
+          const thumbPct = Math.max((1 / sliceInfo.total) * 100, 8);
+          const posPct =
+            sliceInfo.total > 1
+              ? (Math.min(sliceInfo.index, sliceInfo.total - 1) / (sliceInfo.total - 1)) *
+                (100 - thumbPct)
+              : 0;
+          return (
+            <div className="mobile-v2-scrollindicator" aria-hidden="true">
+              <div
+                className="mobile-v2-scrollindicator-thumb"
+                style={{ height: `${thumbPct}%`, top: `${posPct}%` }}
+              />
+            </div>
+          );
+        })()}
 
       {/* Barra de cine: solo para series multiframe. Auto-reproduce en US/RF/XA;
           on-demand (botón Cine de la toolbar) en el resto. key por serie → se

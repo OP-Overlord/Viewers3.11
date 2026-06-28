@@ -182,7 +182,13 @@ function ViewerLayoutWithBottomPanel({
           {/* BOTTOM PANEL */}
           {showBottomPanel && (
             <>
-              <ResizableHandle className="hover:bg-primary h-1 cursor-row-resize bg-black" />
+              {/* Divisor estático: `disabled` desactiva el arrastre (antes se podía
+                  redimensionar viewport/miniaturas con click sostenido en el borde).
+                  Sin cursor-row-resize ni hover → no parece interactivo. */}
+              <ResizableHandle
+                disabled
+                className="h-1 cursor-default bg-black"
+              />
               <ResizablePanel
                 defaultSize={bottomPanelPercentage}
                 minSize={10}
