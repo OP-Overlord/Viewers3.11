@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSystem } from '@ohif/core';
 import { useImageViewer, useViewportGrid } from '@ohif/ui-next';
+import { fetchRenderedThumbnailSrc } from '../Viewport/renderedImageLoader';
 
 // Prefix for all thumbnail logs — set DEBUG_THUMBNAILS=false to silence
 const LOG_PREFIX = '[Thumbnails]';
@@ -165,10 +166,18 @@ async function getOversizedThumbnailFromImageId(
   }
   const range = maxVal - minVal || 1;
 
+  // MONOCHROME1: la escala de grises está invertida (valor alto = oscuro). Este
+  // ventaneo manual mapea linealmente sin considerar la polaridad, así que para
+  // MONOCHROME1 hay que invertir el resultado o el thumbnail sale en negativo
+  // (fondo blanco, tejido oscuro). Cornerstone (ruta loadImageToCanvas) y el
+  // servidor (rendered) ya lo hacen; este camino de respaldo no lo hacía.
+  const invert = image.photometricInterpretation === 'MONOCHROME1' || image.invert === true;
+
   for (let i = 0; i < srcWidth * srcHeight; i++) {
     let v = Math.round(((pixelData[i] - minVal) / range) * 255);
     if (v < 0) v = 0;
     if (v > 255) v = 255;
+    if (invert) v = 255 - v;
     imgData.data[i * 4] = v;
     imgData.data[i * 4 + 1] = v;
     imgData.data[i * 4 + 2] = v;
@@ -519,17 +528,27 @@ const HorizontalThumbnailList = () => {
               (exceedsLimit ? ' [oversized → downsample]' : '') +
               '...'
           );
-        let thumbnailSrc: string;
-        if (exceedsLimit) {
-          thumbnailSrc = await getOversizedImageSrc(imageId, modality);
-        } else {
-          try {
-            thumbnailSrc = (await getImageSrc(imageId, modality)) as string;
-          } catch (_loadErr) {
-            console.warn(
-              `${LOG_PREFIX} ⚠️ loadImageToCanvas falló para ${modality}, reintentando con downsample...`
-            );
+        let thumbnailSrc: string | undefined;
+
+        // Modalidades grandes (DX/CR/MG/RX/DR): pedir al servidor una miniatura
+        // `rendered` pequeña (JPEG 8-bit ya ventaneado) en vez de descargar el
+        // frame completo a resolución nativa vía Cornerstone (decenas de MB en
+        // una MG → lentísimo). Si el servidor no la entrega, cae a la ruta normal.
+        thumbnailSrc =
+          (await fetchRenderedThumbnailSrc(imageId, modality, THUMBNAIL_SIZE)) ?? undefined;
+
+        if (!thumbnailSrc) {
+          if (exceedsLimit) {
             thumbnailSrc = await getOversizedImageSrc(imageId, modality);
+          } else {
+            try {
+              thumbnailSrc = (await getImageSrc(imageId, modality)) as string;
+            } catch (_loadErr) {
+              console.warn(
+                `${LOG_PREFIX} ⚠️ loadImageToCanvas falló para ${modality}, reintentando con downsample...`
+              );
+              thumbnailSrc = await getOversizedImageSrc(imageId, modality);
+            }
           }
         }
 

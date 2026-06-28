@@ -43,6 +43,17 @@ const toolbarButtons: Button[] = [
     },
   },
   {
+    id: 'Cine',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'tool-cine',
+      label: 'Cine',
+      tooltip: 'Reproduce la serie como video (automático en US/RF/XA)',
+      commands: 'novaMobileToggleCine',
+      evaluate: 'evaluate.action',
+    },
+  },
+  {
     id: 'Share',
     uiType: 'ohif.toolButton',
     props: {

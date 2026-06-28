@@ -18,6 +18,10 @@ import './connectivity.css';
 // situación EMPEORE respecto a cuando se descartó.
 const DISMISS_COOLDOWN_MS = 5 * 60 * 1000;
 
+// La burbuja se cierra sola a los 5 s aunque el usuario no interactúe (aviso
+// efímero y no invasivo). Si la expande para leer, se cancela el auto-cierre.
+const AUTO_DISMISS_MS = 5 * 1000;
+
 const severityRank: Record<ConnHealth, number> = {
   good: 0,
   degraded: 1,
@@ -104,6 +108,26 @@ export const ConnectivityAgent: React.FC = () => {
     }
   }, [isProblem]);
 
+  // Marca la burbuja como descartada (entra en cooldown) a la severidad dada.
+  const commitDismiss = (atRank: number) => {
+    dismissUntilRef.current = Date.now() + DISMISS_COOLDOWN_MS;
+    dismissedRankRef.current = atRank;
+    setExpanded(false);
+    forceRender(n => n + 1);
+  };
+
+  // Auto-cierre: la burbuja desaparece sola a los 5 s aunque el usuario no
+  // interactúe. Si la expande para leer el detalle (interacción), se cancela el
+  // temporizador y no la cerramos mientras la está leyendo.
+  useEffect(() => {
+    if (!isProblem || inCooldown || expanded) {
+      return;
+    }
+    const t = setTimeout(() => commitDismiss(rank), AUTO_DISMISS_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isProblem, inCooldown, expanded, rank]);
+
   if (!isProblem || inCooldown) {
     return null;
   }
@@ -113,12 +137,7 @@ export const ConnectivityAgent: React.FC = () => {
     (c): c is string => Boolean(c)
   );
 
-  const handleDismiss = () => {
-    dismissUntilRef.current = Date.now() + DISMISS_COOLDOWN_MS;
-    dismissedRankRef.current = rank;
-    setExpanded(false);
-    forceRender(n => n + 1);
-  };
+  const handleDismiss = () => commitDismiss(rank);
 
   return (
     <div

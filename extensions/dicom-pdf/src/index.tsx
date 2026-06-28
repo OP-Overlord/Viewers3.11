@@ -3,7 +3,8 @@ import getSopClassHandlerModule from './getSopClassHandlerModule';
 import { id } from './id.js';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './viewports/OHIFCornerstonePdfViewport');
+  // Sin webpackPrefetch: viewport especial (PDF) → carga bajo demanda.
+  return import('./viewports/OHIFCornerstonePdfViewport');
 });
 
 const OHIFCornerstonePdfViewport = props => {

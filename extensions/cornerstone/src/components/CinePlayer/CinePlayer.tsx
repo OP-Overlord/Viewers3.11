@@ -11,7 +11,8 @@ function WrappedCinePlayer({
   enabledVPElement: HTMLElement;
   viewportId: string;
 }>) {
-  const { customizationService, displaySetService, viewportGridService } = servicesManager.services;
+  const { customizationService, displaySetService, viewportGridService, hangingProtocolService } =
+    servicesManager.services;
   const [{ isCineEnabled, cines }, cineService] = useCine();
   const [newStackFrameRate, setNewStackFrameRate] = useState(24);
   const [dynamicInfo, setDynamicInfo] = useState(null);
@@ -48,6 +49,13 @@ function WrappedCinePlayer({
     let isPlaying = cines[viewportId]?.isPlaying || false;
     let shouldAutoPlay = false;
 
+    // Protocolos que piden mostrar el cine PAUSADO al entrar (p. ej. @nova/hpXA)
+    // marcan `cineStartPaused: true`. Es una supresión DETERMINISTA del autoplay,
+    // independiente del timing de activeViewport o del set "cine cerrado" global.
+    const cineStartPaused = Boolean(
+      (hangingProtocolService?.getActiveProtocol?.()?.protocol as any)?.cineStartPaused
+    );
+
     displaySetInstanceUIDs.forEach(displaySetInstanceUID => {
       const displaySet = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
 
@@ -70,7 +78,8 @@ function WrappedCinePlayer({
           appConfig.autoPlayCine &&
           isActiveViewport &&
           !cineService.isViewportCineClosed(viewportId) &&
-          !alreadyHandled
+          !alreadyHandled &&
+          !cineStartPaused
         ) {
           shouldAutoPlay = true;
           isPlaying = true;
@@ -103,7 +112,15 @@ function WrappedCinePlayer({
     }
     cineService.setCine({ id: viewportId, isPlaying, frameRate });
     setNewStackFrameRate(frameRate);
-  }, [displaySetService, viewportId, viewportGridService, cines, enabledVPElement, appConfig.autoPlayCine]);
+  }, [
+    displaySetService,
+    viewportId,
+    viewportGridService,
+    cines,
+    enabledVPElement,
+    appConfig.autoPlayCine,
+    hangingProtocolService,
+  ]);
 
   useEffect(() => {
     isMountedRef.current = true;

@@ -11,7 +11,8 @@ import createReferencedImageDisplaySet from './utils/createReferencedImageDispla
 import Enums from './enums';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './components/OHIFCornerstoneSRViewport');
+  // Sin webpackPrefetch: viewport especial (SR) → carga bajo demanda.
+  return import('./components/OHIFCornerstoneSRViewport');
 });
 
 const OHIFCornerstoneSRViewport = props => {

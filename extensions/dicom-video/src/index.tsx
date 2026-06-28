@@ -3,7 +3,8 @@ import getSopClassHandlerModule from './getSopClassHandlerModule';
 import { id } from './id';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './viewports/OHIFCornerstoneVideoViewport');
+  // Sin webpackPrefetch: viewport especial (video) → carga bajo demanda.
+  return import('./viewports/OHIFCornerstoneVideoViewport');
 });
 
 const OHIFCornerstoneVideoViewport = props => {

@@ -73,11 +73,12 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         className="flex flex-shrink-0 cursor-pointer items-center"
         onClick={showReturnButton ? onClickReturnButton : undefined}
       >
-        {showReturnButton && <Icons.ArrowLeft className="text-primary h-6 w-6" />}
-        <div
-          className="ml-1"
-          style={{ transform: 'scale(0.7)', transformOrigin: 'left center' }}
-        >
+        {showReturnButton && <Icons.ArrowLeft className="text-primary h-5 w-5" />}
+        {/* Logo dimensionado por ALTURA del SVG (no por transform: scale, que no
+            reduce el ancho reservado en el layout). max-w + overflow acotan el
+            ancho del contenedor → libera espacio horizontal para que las etiquetas
+            de los botones de la toolbar se vean completas. */}
+        <div className="ml-0.5 flex max-w-[40px] items-center overflow-hidden [&_svg]:h-3.5 [&_svg]:w-auto">
           {renderLogo()}
         </div>
       </div>
@@ -94,7 +95,7 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         <style>{`
           .mobile-toolbar-scroll::-webkit-scrollbar { display: none; }
         `}</style>
-        <div className="mobile-toolbar-scroll flex items-center justify-start gap-1">
+        <div className="mobile-toolbar-scroll flex items-center justify-start gap-0.5">
           {toolbarButtons.map((button: any) => {
             const isActive = button.componentProps?.isActive;
             const isDisabled = button.componentProps?.disabled;
@@ -107,7 +108,11 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
             return (
               <button
                 key={button.id}
-                className={`flex h-[46px] min-w-[48px] flex-col items-center justify-center rounded px-1 transition-colors duration-150 ${
+                // grow + shrink-0 + basis auto: cada botón mide AL MENOS su contenido
+                // (el texto nunca se trunca) y crece para repartir el espacio sobrante.
+                // Con el logo reducido, los 5 caben en pantallas de móvil normales; en
+                // pantallas muy estrechas el contenedor permite scroll como respaldo.
+                className={`flex h-[46px] shrink-0 grow basis-auto flex-col items-center justify-center rounded px-1.5 transition-colors duration-150 ${
                   isActive ? 'bg-primary text-black' : 'text-white hover:bg-white/10'
                 } ${isDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} `}
                 onClick={() => !isDisabled && handleButtonClick(button)}
@@ -118,11 +123,11 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
                 {IconComponent && (
                   <Icons.ByName
                     name={iconName}
-                    className={`h-5 w-5 ${isActive ? 'text-black' : 'text-white'}`}
+                    className={`h-5 w-5 shrink-0 ${isActive ? 'text-black' : 'text-white'}`}
                   />
                 )}
                 <span
-                  className={`mt-0.5 text-[9px] leading-tight ${isActive ? 'text-black' : 'text-gray-300'}`}
+                  className={`mt-0.5 whitespace-nowrap text-[9px] leading-tight ${isActive ? 'text-black' : 'text-gray-300'}`}
                 >
                   {label}
                 </span>

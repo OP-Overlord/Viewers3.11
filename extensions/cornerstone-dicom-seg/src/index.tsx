@@ -7,7 +7,9 @@ import getCommandsModule from './commandsModule';
 import { getToolbarModule } from './getToolbarModule';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './viewports/OHIFCornerstoneSEGViewport');
+  // Sin webpackPrefetch: viewport especial (SEG) → se carga bajo demanda al abrir
+  // una segmentación, en vez de competir por ancho de banda en la carga inicial.
+  return import('./viewports/OHIFCornerstoneSEGViewport');
 });
 
 const OHIFCornerstoneSEGViewport = props => {

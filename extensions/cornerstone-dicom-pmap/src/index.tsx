@@ -3,7 +3,8 @@ import React from 'react';
 import getSopClassHandlerModule from './getSopClassHandlerModule';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './viewports/OHIFCornerstonePMAPViewport');
+  // Sin webpackPrefetch: viewport especial (PMAP) → carga bajo demanda.
+  return import('./viewports/OHIFCornerstonePMAPViewport');
 });
 
 const OHIFCornerstonePMAPViewport = props => {

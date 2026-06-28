@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { reduceRenderSize } from './renderedImageLoader';
 
 interface Props {
   children: ReactNode;
@@ -31,6 +32,16 @@ class ViewportErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, _errorInfo: ErrorInfo) {
+    // Si el error parece un fallo de render WebGL/vtk (textura demasiado grande para
+    // la GPU), reducir el tamaño de render del viewport para que el remontaje (retry)
+    // use una textura menor. Gated por la firma y capado para no degradar la calidad
+    // ante errores transitorios no relacionados.
+    if (
+      this.state.retryCount < 3 &&
+      /isAttributeUsed|setMapperShaderParameters|webgl|context lost/i.test(error?.message ?? '')
+    ) {
+      reduceRenderSize(this.props.viewportId);
+    }
     // Solo loguear en desarrollo
     if (process.env.NODE_ENV === 'development') {
       console.warn(

@@ -68,7 +68,10 @@ body:has(.theme-nova-mobile) {
   color: var(--nm-text-secondary) !important;
   border-radius: 6px;
   transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
-  min-width: 52px;
+  /* Piso de ancho reducido (antes 52px): con flex-1 + min-w-0 en el componente,
+     los botones reparten el ancho y se encogen para que todos (Pan/Medir/Contraste/
+     Cine/Compartir) quepan sin scroll horizontal incluso en pantallas estrechas. */
+  min-width: 40px;
 }
 
 /* Icons inherit parent color */

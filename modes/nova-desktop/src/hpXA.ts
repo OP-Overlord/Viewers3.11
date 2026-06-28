@@ -15,6 +15,12 @@ const hpXA = {
   locked: true,
   name: 'XA 1x1 Cine',
   numberOfPriorsReferenced: 0,
+  // Señal declarativa que lee el CinePlayer (extensions/cornerstone) para NO
+  // auto-reproducir al entrar a este protocolo: la barra de cine se muestra
+  // (vía onProtocolEnter → novaCineShowPaused) pero arranca PAUSADA. Es la vía
+  // determinista; no depende del timing de activeViewport ni del set "cine
+  // cerrado" global del CineService.
+  cineStartPaused: true,
   protocolMatchingRules: [
     {
       id: 'studyHasXA',

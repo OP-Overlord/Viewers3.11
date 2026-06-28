@@ -1,8 +1,14 @@
-import { cache as csCache } from '@cornerstonejs/core';
+import {
+  cache as csCache,
+  setUseCPURendering,
+  resetUseCPURendering,
+} from '@cornerstonejs/core';
 import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import hpMobile from './hpMobile';
 import { id } from './id';
+import { registerRenderedImageLoader } from '../../../extensions/nova-layout/src/Viewport/renderedImageLoader';
+import { mobileCineStore } from '../../../extensions/nova-layout/src/Viewport/mobileCineStore';
 import {
   mountConnectivityAgent,
   unmountConnectivityAgent,
@@ -169,6 +175,15 @@ function modeFactory({ modeConfiguration }) {
         studyPrefetcherService,
       } = servicesManager.services;
 
+      // Forzar CPU rendering SOLO en móvil. El render WebGL/vtk de las imágenes
+      // rendered grandes (DX/MG/CR) es inestable en muchos GPUs móviles: el primer
+      // render del actor deja el shader program en null (`isAttributeUsed` null) →
+      // negro, y solo se recupera recreando el contexto. El render por CPU (canvas
+      // 2D) evita por completo ese camino y es fiable en cualquier dispositivo.
+      // Se restaura en onModeExit. Debe ir ANTES de montar los viewports.
+      setUseCPURendering(true);
+      console.log('[Nova Mobile] CPU rendering FORZADO (evita crash WebGL/vtk en GPU móvil)');
+
       // Apply mobile theme class (scopes all nova-mobile-theme.css rules)
       const root = document.getElementById('root');
       if (root && !root.classList.contains('theme-nova-mobile')) {
@@ -196,20 +211,39 @@ function modeFactory({ modeConfiguration }) {
       // (JPEG-first to reduce network/decode load for large DX/MG images)
       configureMobileTransferSyntax(extensionManager);
 
+      // Registrar el image loader `novarendered:` (WADO-RS rendered). Las
+      // modalidades grandes (DX/CR/MG/RX/DR) se cargan como JPEG 8-bit color
+      // reescalado por el servidor → render fiable en GPU móvil, sin OOM ni
+      // texturas 16-bit. Ver MobileViewportV2 (remap) y renderedImageLoader.
+      registerRenderedImageLoader({ servicesManager });
+
       // Apply mobile-optimized configuration (only removes overlays)
       applyMobileConfiguration(customizationService);
 
       // Init minimal ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);
 
+      // Comando del botón "Cine" de la toolbar: alterna la barra de cine móvil
+      // (visible/oculta) vía mobileCineStore. El reproductor (MobileCinePlayer,
+      // montado por MobileViewportV2) se suscribe al store y arranca/detiene la
+      // reproducción. Solo surte efecto en series multiframe (el reproductor solo
+      // se monta en esos casos); en US/RF/XA ya arranca solo (autoplay).
+      commandsManager.registerCommand('CORNERSTONE', 'novaMobileToggleCine', () => {
+        mobileCineStore.toggle();
+      });
+
       // Register toolbar buttons
       toolbarService.register([...toolbarButtons]);
 
-      // Mobile toolbar: pan + measurement + contrast + share
-      toolbarService.updateSection('primary', ['Pan', 'Length', 'WindowLevel', 'Share']);
+      // Mobile toolbar: pan + measurement + contrast + cine + share
+      toolbarService.updateSection('primary', ['Pan', 'Length', 'WindowLevel', 'Cine', 'Share']);
     },
 
     onModeExit: ({ servicesManager }: withAppTypes) => {
+      // Restaurar el modo de render (GPU si hay WebGL) al salir de móvil, para no
+      // afectar a otros modos en el mismo navegador.
+      resetUseCPURendering();
+
       // Remove mobile theme class
       const root = document.getElementById('root');
       root?.classList.remove('theme-nova-mobile');

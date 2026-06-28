@@ -5,7 +5,8 @@ import getSopClassHandlerModule from './getSopClassHandlerModule';
 import getCommandsModule from './getCommandsModule';
 
 const Component = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './viewports/OHIFCornerstoneRTViewport');
+  // Sin webpackPrefetch: viewport especial (RT) → carga bajo demanda.
+  return import('./viewports/OHIFCornerstoneRTViewport');
 });
 
 const OHIFCornerstoneRTViewport = props => {

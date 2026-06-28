@@ -13,7 +13,8 @@ const LazyMobileViewport = props => {
 };
 
 const PdfComponent = React.lazy(() => {
-  return import(/* webpackPrefetch: true */ './Viewport/MobilePdfViewport');
+  // Sin webpackPrefetch: viewport especial (PDF móvil) → carga bajo demanda.
+  return import('./Viewport/MobilePdfViewport');
 });
 
 const LazyMobilePdfViewport = props => {
