@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icons } from '@ohif/ui-next';
 import { useSystem, useToolbar } from '@ohif/core';
@@ -16,7 +16,7 @@ const toolIconMap: Record<string, string> = {
 
 function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }>) {
   const { extensionManager, servicesManager, commandsManager } = useSystem();
-  const { toolbarService } = servicesManager.services;
+  const { toolbarService, toolGroupService, viewportGridService } = servicesManager.services;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +26,50 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     toolbarService,
     buttonSection: 'primary',
   });
+
+  // Resaltado dirigido por la herramienta activa REAL de cornerstone, leída de
+  // forma SÍNCRONA. El `isActive` que entrega el toolbarService solo se recalcula
+  // cuando `refreshToolbarState` corre con un viewportId que resuelve el toolGroup;
+  // tras un toggle ese valor queda desfasado y solo se corrige cuando un evento
+  // posterior (interacción con el viewport) re-evalúa → el botón "se quedaba activo
+  // hasta que cambiaba la escena". Leyendo el toolGroup aquí, el cambio es inmediato.
+  const [activeToolName, setActiveToolName] = useState<string | null>(null);
+
+  const readActiveTool = useCallback((): string | null => {
+    try {
+      const viewportId = viewportGridService.getActiveViewportId();
+      const toolGroup: any =
+        (viewportId && toolGroupService.getToolGroupForViewport(viewportId)) ||
+        toolGroupService.getToolGroup('default');
+      return toolGroup?.getActivePrimaryMouseButtonTool?.() ?? null;
+    } catch {
+      return null;
+    }
+  }, [toolGroupService, viewportGridService]);
+
+  // Mantener el resaltado en sincronía con cambios de escena (cambio de viewport
+  // activo, series listas, o cualquier re-evaluación del toolbar).
+  useEffect(() => {
+    const sync = () => setActiveToolName(readActiveTool());
+    sync();
+    const subs = [
+      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_MODIFIED, sync),
+      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_STATE_MODIFIED, sync),
+      viewportGridService.subscribe(viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED, sync),
+      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, sync),
+    ];
+    return () => subs.forEach(s => s.unsubscribe());
+  }, [toolbarService, viewportGridService, readActiveTool]);
+
+  // Nombre de la herramienta asociada a un botón (= commandOptions.toolName de los
+  // tool buttons; para acciones como Cine/Share cae al id, que nunca coincide con
+  // una herramienta de cornerstone → nunca se resaltan).
+  const getToolName = (button: any): string => {
+    const cmds = button.componentProps?.commands;
+    const arr = Array.isArray(cmds) ? cmds : [cmds];
+    const first = arr.find(Boolean);
+    return first?.commandOptions?.toolName ?? button.id;
+  };
 
   const onClickReturnButton = () => {
     const { pathname } = location;
@@ -52,8 +96,12 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         itemId: button.id,
         commands: button.componentProps?.commands,
       });
+      // El comando ya corrió de forma SÍNCRONA (setToolActive incluido) → leer ahora
+      // la herramienta activa refleja el toggle de inmediato, sin esperar al
+      // re-evaluado del toolbarService. React agrupa este setState con el del hook.
+      setActiveToolName(readActiveTool());
     },
-    [onInteraction]
+    [onInteraction, readActiveTool]
   );
 
   const showReturnButton = !!appConfig.showStudyList;
@@ -97,7 +145,11 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         `}</style>
         <div className="mobile-toolbar-scroll flex items-center justify-start gap-0.5">
           {toolbarButtons.map((button: any) => {
-            const isActive = button.componentProps?.isActive;
+            // Resaltado por la herramienta activa real (inmediato). Si no hay
+            // herramienta activa legible, se cae al isActive del toolbarService.
+            const isActive = activeToolName
+              ? getToolName(button) === activeToolName
+              : !!button.componentProps?.isActive;
             const isDisabled = button.componentProps?.disabled;
             const iconName = button.componentProps?.icon || toolIconMap[button.id];
             const label = button.componentProps?.label || button.id;
@@ -112,10 +164,18 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
                 // (el texto nunca se trunca) y crece para repartir el espacio sobrante.
                 // Con el logo reducido, los 5 caben en pantallas de móvil normales; en
                 // pantallas muy estrechas el contenedor permite scroll como respaldo.
-                className={`flex h-[46px] shrink-0 grow basis-auto flex-col items-center justify-center rounded px-1.5 transition-colors duration-150 ${
-                  isActive ? 'bg-primary text-black' : 'text-white hover:bg-white/10'
+
+                className={`flex h-[46px] shrink-0 grow basis-auto select-none flex-col items-center justify-center rounded px-1.5 transition-colors duration-150 focus:outline-none ${
+                  // `active:` (presión) en vez de `hover:`: en táctil el `:hover` queda
+                  // "pegado" tras el tap → el botón parece seguir activo aunque la
+                  // herramienta ya cambió. La feedback de pulsación no se queda pegada.
+                  isActive ? 'bg-primary text-black' : 'text-white active:bg-white/10'
                 } ${isDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} `}
-                onClick={() => !isDisabled && handleButtonClick(button)}
+                onClick={e => {
+                  // Quita el foco para que no quede resaltado tras el tap.
+                  (e.currentTarget as HTMLButtonElement).blur();
+                  if (!isDisabled) handleButtonClick(button);
+                }}
                 disabled={isDisabled}
                 data-cy={`toolbar-button-${button.id}`}
                 id={`toolbar-button-${button.id}`}
