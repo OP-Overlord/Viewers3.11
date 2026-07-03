@@ -23,8 +23,8 @@ export default {
       steps: [
         {
           id: 'welcome',
-          title: 'Bienvenido a Nova Mobile',
-          text: 'Toca una miniatura en la barra inferior para ver información detallada de la serie antes de cargarla.',
+          title: 'Explora las series',
+          text: 'Toca una miniatura de la barra inferior para ver la modalidad y el número de imágenes de la serie antes de abrirla.',
           attachTo: {
             element: '#thumbnail-list-container',
             on: 'top',
@@ -37,8 +37,8 @@ export default {
         },
         {
           id: 'loadSeries',
-          title: 'Cargar Serie',
-          text: 'Haz doble tap sobre una miniatura para cargar la serie en el visor principal.',
+          title: 'Abre una serie',
+          text: 'Haz doble toque sobre una miniatura para cargarla en el visor principal.',
           attachTo: {
             element: '#thumbnail-item-0',
             on: 'top',
@@ -51,45 +51,55 @@ export default {
         },
         {
           id: 'navigation',
-          title: 'Navegación',
-          text: 'Desliza tu dedo verticalmente sobre la imagen para navegar entre las diferentes imágenes de la serie.',
+          title: 'Navega y haz zoom',
+          text: 'Desliza un dedo hacia arriba o abajo para recorrer las imágenes de la serie. Pellizca con dos dedos para acercar o alejar la imagen.',
           attachTo: {
-            element: '.viewport-element',
-            on: 'bottom',
+            // El viewport móvil (MobileViewportV2) NO envuelve OHIFCornerstoneViewport:
+            // su elemento es `.mobile-v2-element`, no `.viewport-element`.
+            element: '.mobile-v2-element',
+            on: 'top',
           },
           advanceOn: {
-            selector: '.cornerstone-viewport-element',
+            selector: '.mobile-v2-element',
             event: 'touchmove',
           },
-          beforeShowPromise: () => waitForElement('.viewport-element'),
+          beforeShowPromise: () => waitForElement('.mobile-v2-element'),
         },
         {
-          id: 'zoom',
-          title: 'Zoom y Pan',
-          text: 'Selecciona la herramienta de Zoom para pellizcar y acercar, o Pan para mover la imagen.',
+          id: 'tools',
+          title: 'Herramientas de imagen',
+          text: 'Ajusta el Contraste, activa Medir para calcular distancias o Cine para reproducir la serie como video. Toca de nuevo el botón activo para volver a la navegación.',
           attachTo: {
-            element: '#toolbar-button-Zoom',
+            element: '#toolbar-button-WindowLevel',
             on: 'bottom',
           },
           advanceOn: {
-            selector: '#toolbar-button-Zoom',
+            selector: '#toolbar-button-WindowLevel',
             event: 'click',
           },
-          beforeShowPromise: () => waitForElement('#toolbar-button-Zoom'),
+          beforeShowPromise: () => waitForElement('#toolbar-button-WindowLevel'),
         },
         {
-          id: 'download',
-          title: 'Descargar',
-          text: 'Usa el botón de descarga en la barra superior para guardar la imagen que estás viendo.',
+          id: 'share',
+          title: 'Comparte o descarga',
+          text: 'Usa Compartir en la barra superior para guardar o enviar la imagen que estás viendo.',
           attachTo: {
-            element: '#toolbar-button-Capture',
+            element: '#toolbar-button-Share',
             on: 'bottom',
           },
           advanceOn: {
-            selector: '#toolbar-button-Capture',
+            selector: '#toolbar-button-Share',
             event: 'click',
           },
-          beforeShowPromise: () => waitForElement('#toolbar-button-Capture'),
+          beforeShowPromise: () => waitForElement('#toolbar-button-Share'),
+          buttons: [
+            {
+              text: 'Finalizar',
+              action() {
+                this.complete();
+              },
+            },
+          ],
         },
       ],
       tourOptions: {

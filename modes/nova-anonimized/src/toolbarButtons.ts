@@ -340,6 +340,8 @@ const toolbarButtons: Button[] = [
       icon: 'icon-mpr',
       label: 'MPR',
       tooltip: 'MPR',
+      // El guard de capacidad MPR/3D se aplica de forma CENTRAL interceptando
+      // `toggleHangingProtocol` (ver nova-layout/preRegistration.ts).
       commands: {
         commandName: 'toggleHangingProtocol',
         commandOptions: {

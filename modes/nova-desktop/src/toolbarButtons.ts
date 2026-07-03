@@ -340,6 +340,9 @@ const toolbarButtons: Button[] = [
       icon: 'icon-mpr',
       label: 'MPR',
       tooltip: 'Reconstrucción multiplanar (axial, sagital y coronal)',
+      // El guard de capacidad MPR/3D se aplica de forma CENTRAL interceptando
+      // `toggleHangingProtocol` (ver nova-layout/preRegistration.ts). El botón
+      // queda como el original; no necesita cableado especial.
       commands: {
         commandName: 'toggleHangingProtocol',
         commandOptions: {

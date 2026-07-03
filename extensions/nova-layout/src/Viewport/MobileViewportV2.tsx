@@ -207,6 +207,7 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     cornerstoneViewportService,
     cornerstoneCacheService,
     toolGroupService,
+    toolbarService,
     segmentationService,
     displaySetService,
   } = servicesManager.services;
@@ -779,11 +780,15 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     const toolName = cineInfo.frameCount > 1 ? 'StackScroll' : 'Pan';
     try {
       commandsManager.runCommand('setToolActive', { toolName, toolGroupId: 'default' });
+      // Este setToolActive es DIRECTO (no pasa por la toolbar) → hay que avisar a la
+      // toolbar para que el header re-sincronice el botón resaltado; si no, el botón
+      // que el usuario tenía seleccionado queda "pegado" como activo tras cargar la serie.
+      toolbarService.refreshToolbarState({ viewportId });
     } catch (_e) {
       // tool group aún no listo; se reintenta en el próximo ready
       defaultToolDsKeyRef.current = null;
     }
-  }, [status, cineInfo, commandsManager]);
+  }, [status, cineInfo, commandsManager, toolbarService, viewportId]);
 
   // ─── Reacción a cambios REALES de displaySet (post-montaje) ───────────────
   // Solo se dispara cuando displaySets/viewportOptions/dataSource cambian de

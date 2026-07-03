@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useReducer } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icons } from '@ohif/ui-next';
 import { useSystem, useToolbar } from '@ohif/core';
 import { preserveQueryParameters } from '@ohif/app';
+import { mobileCineStore } from '../Viewport/mobileCineStore';
 
 // Map of tool IDs to their icon names
 const toolIconMap: Record<string, string> = {
@@ -27,14 +28,11 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     buttonSection: 'primary',
   });
 
-  // Resaltado dirigido por la herramienta activa REAL de cornerstone, leída de
-  // forma SÍNCRONA. El `isActive` que entrega el toolbarService solo se recalcula
-  // cuando `refreshToolbarState` corre con un viewportId que resuelve el toolGroup;
-  // tras un toggle ese valor queda desfasado y solo se corrige cuando un evento
-  // posterior (interacción con el viewport) re-evalúa → el botón "se quedaba activo
-  // hasta que cambiaba la escena". Leyendo el toolGroup aquí, el cambio es inmediato.
-  const [activeToolName, setActiveToolName] = useState<string | null>(null);
-
+  // Resaltado dirigido por la herramienta activa REAL de cornerstone, LEÍDA EN CADA
+  // RENDER (no cacheada en estado). El `isActive` del toolbarService se queda
+  // desfasado tras un toggle (evaluate.cornerstoneTool sale temprano si el viewport
+  // no resuelve toolGroup), y guardar la herramienta en estado también se quedaba
+  // "pegado" en algunos toggles. Leyéndola aquí, el resaltado SIEMPRE refleja lo real.
   const readActiveTool = useCallback((): string | null => {
     try {
       const viewportId = viewportGridService.getActiveViewportId();
@@ -47,19 +45,22 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     }
   }, [toolGroupService, viewportGridService]);
 
-  // Mantener el resaltado en sincronía con cambios de escena (cambio de viewport
-  // activo, series listas, o cualquier re-evaluación del toolbar).
+  // Sólo fuerza re-render en cambios de herramienta/escena/cine; el valor real se
+  // lee en el render (ver `activeToolName`/`cineActive` abajo).
+  const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => {
-    const sync = () => setActiveToolName(readActiveTool());
-    sync();
     const subs = [
-      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_MODIFIED, sync),
-      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_STATE_MODIFIED, sync),
-      viewportGridService.subscribe(viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED, sync),
-      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, sync),
+      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_MODIFIED, bump),
+      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_STATE_MODIFIED, bump),
+      viewportGridService.subscribe(viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED, bump),
+      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, bump),
     ];
-    return () => subs.forEach(s => s.unsubscribe());
-  }, [toolbarService, viewportGridService, readActiveTool]);
+    const unsubCine = mobileCineStore.subscribe(bump);
+    return () => {
+      subs.forEach(s => s.unsubscribe());
+      unsubCine();
+    };
+  }, [toolbarService, viewportGridService]);
 
   // Nombre de la herramienta asociada a un botón (= commandOptions.toolName de los
   // tool buttons; para acciones como Cine/Share cae al id, que nunca coincide con
@@ -96,15 +97,21 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         itemId: button.id,
         commands: button.componentProps?.commands,
       });
-      // El comando ya corrió de forma SÍNCRONA (setToolActive incluido) → leer ahora
-      // la herramienta activa refleja el toggle de inmediato, sin esperar al
-      // re-evaluado del toolbarService. React agrupa este setState con el del hook.
-      setActiveToolName(readActiveTool());
+      // Re-render inmediato + otro en el siguiente frame, por si cornerstone confirma
+      // el cambio de herramienta de forma diferida. El valor se lee fresco en el render.
+      bump();
+      requestAnimationFrame(() => bump());
     },
-    [onInteraction, readActiveTool]
+    [onInteraction, bump]
   );
 
   const showReturnButton = !!appConfig.showStudyList;
+
+  // Lecturas FRESCAS en cada render (el `bump` fuerza el re-render cuando cambian):
+  //  - herramienta activa real del toolGroup (Pan/Length/WindowLevel…)
+  //  - visibilidad de la barra de cine (para el botón Cine, que es una acción)
+  const activeToolName = readActiveTool();
+  const cineActive = mobileCineStore.isVisible();
 
   // Render logo component
   const renderLogo = () => {
@@ -145,11 +152,14 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
         `}</style>
         <div className="mobile-toolbar-scroll flex items-center justify-start gap-0.5">
           {toolbarButtons.map((button: any) => {
-            // Resaltado por la herramienta activa real (inmediato). Si no hay
-            // herramienta activa legible, se cae al isActive del toolbarService.
-            const isActive = activeToolName
-              ? getToolName(button) === activeToolName
-              : !!button.componentProps?.isActive;
+            // Cine es una ACCIÓN (toggle) → su estado activo viene del store de cine,
+            // no de una herramienta de cornerstone. El resto de tool buttons se
+            // resaltan SOLO si su herramienta es la activa (sin fallback al isActive
+            // del toolbarService, que se quedaba "pegado" tras un toggle).
+            const isActive =
+              button.id === 'Cine'
+                ? cineActive
+                : getToolName(button) === activeToolName;
             const isDisabled = button.componentProps?.disabled;
             const iconName = button.componentProps?.icon || toolIconMap[button.id];
             const label = button.componentProps?.label || button.id;

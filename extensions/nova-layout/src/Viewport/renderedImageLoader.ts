@@ -23,13 +23,35 @@ import { imageLoader, metaData, utilities as csUtils } from '@cornerstonejs/core
 
 const SCHEME = 'novarendered';
 
+/** Parseo numérico seguro (acepta arrays [row,col] y strings de DICOM). */
+function toNum(v: unknown): number | undefined {
+  if (Array.isArray(v)) {
+    return toNum(v[0]);
+  }
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 // Tope del lado mayor del render. Potencia de dos (mejor compatibilidad de texturas
 // en GPUs móviles) y conservador en memoria: una textura color de 2048² = ~16 MB de
 // GPU (vs ~26 MB a 2560²). Texturas más grandes hacen fallar el shader de vtk.js en
 // algunos GPUs móviles (Cannot read properties of null 'isAttributeUsed') → negro.
 const MAX_RENDER_SIZE = 2048;
 
-type RenderedInfo = { modality?: string; rows?: number; columns?: number };
+type RenderedInfo = {
+  modality?: string;
+  // Dimensiones y pixel spacing del DICOM ORIGINAL (para escalar la medición).
+  origRows?: number;
+  origColumns?: number;
+  origRowSpacing?: number;
+  origColSpacing?: number;
+  // Dimensiones y spacing del RENDERED (calculados al cargar; los usa el provider
+  // imagePlaneModule para que las mediciones den los mismos mm que en desktop).
+  rows?: number;
+  columns?: number;
+  rowPixelSpacing?: number;
+  columnPixelSpacing?: number;
+};
 const infoMap = new Map<string, RenderedInfo>();
 
 let _registered = false;
@@ -216,6 +238,18 @@ function loadRenderedImage(imageId: string) {
     const info = infoMap.get(imageId) ?? {};
     info.rows = height;
     info.columns = width;
+    // El PACS reescala el frame ENTERO a `width×height` preservando el aspecto, así
+    // que el tamaño físico se conserva: origColumns·origColSpacing == width·newColSpacing.
+    // → newSpacing = origSpacing · (origDim / renderedDim). Sin esto, medir sobre el
+    //   rendered (más pequeño que el DICOM) da menos mm que en desktop.
+    info.columnPixelSpacing =
+      info.origColSpacing && info.origColumns
+        ? (info.origColSpacing * info.origColumns) / width
+        : undefined;
+    info.rowPixelSpacing =
+      info.origRowSpacing && info.origRows
+        ? (info.origRowSpacing * info.origRows) / height
+        : undefined;
     infoMap.set(imageId, info);
 
     const image: any = {
@@ -241,13 +275,11 @@ function loadRenderedImage(imageId: string) {
       voxelManager,
       // CRÍTICO para móvil (CPU rendering forzado): el ZoomTool setea `parallelScale`
       // y StackViewport.setCameraCPU lo convierte a la escala del CPU con
-      // `scale = (clientHeight * rowPixelSpacing * 0.5) / parallelScale`. Si
-      // rowPixelSpacing es undefined → scale = NaN → la imagen salta y el zoom queda
-      // congelado (NaN se propaga). El rendered viene con píxeles cuadrados
-      // isotrópicos (el servidor preserva el aspecto), así que 1/1 es correcto; el
-      // aspecto real lo determinan rows/columns. Solo debe ser finito y > 0.
-      columnPixelSpacing: 1,
-      rowPixelSpacing: 1,
+      // `scale = (clientHeight * rowPixelSpacing * 0.5) / parallelScale`. Debe ser
+      // finito y > 0 o el zoom se congela (NaN). Usamos el spacing REAL escalado (para
+      // que las mediciones den mm correctos); si el original no tiene spacing, 1.
+      columnPixelSpacing: info.columnPixelSpacing ?? 1,
+      rowPixelSpacing: info.rowPixelSpacing ?? 1,
     };
     return image;
   })();
@@ -293,6 +325,25 @@ export function registerRenderedImageLoader({ servicesManager }: { servicesManag
     }
     if (type === 'generalSeriesModule') {
       return { modality: infoMap.get(imageId)?.modality };
+    }
+    if (type === 'imagePlaneModule') {
+      // Spacing REAL escalado del rendered → las mediciones de longitud dan los
+      // mismos mm que en desktop. `getImageDataMetadata` usa
+      // `imagePlaneModule.columnPixelSpacing || image.columnPixelSpacing` y como el
+      // default de cornerstone es 1 (truthy), ESTE provider es imprescindible.
+      // Las cosinas/posición las rellena `getImagePlaneModule` con identidad; la
+      // longitud es invariante a la orientación, así que no hace falta darlas.
+      const info = infoMap.get(imageId) ?? {};
+      return {
+        rows: info.rows,
+        columns: info.columns,
+        rowPixelSpacing: info.rowPixelSpacing,
+        columnPixelSpacing: info.columnPixelSpacing,
+        pixelSpacing:
+          info.rowPixelSpacing != null && info.columnPixelSpacing != null
+            ? [info.rowPixelSpacing, info.columnPixelSpacing]
+            : undefined,
+      };
     }
     return undefined;
   }, 10000);
@@ -358,7 +409,19 @@ export function buildRenderedImageIds(
       return null; // formato inesperado (p. ej. wadouri) → fallback al path normal
     }
     const imageId = `${SCHEME}:${renderedUrl}`;
-    infoMap.set(imageId, { modality });
+
+    // Dimensiones y pixel spacing del DICOM ORIGINAL, leídos del MISMO provider que
+    // usa desktop (`imagePlaneModule`) → mediciones consistentes. Se guardan para
+    // escalar el spacing cuando el rendered llegue reescalado (ver loadRenderedImage).
+    const plane: any = metaData.get('imagePlaneModule', original) || {};
+    const pixel: any = metaData.get('imagePixelModule', original) || {};
+    infoMap.set(imageId, {
+      modality,
+      origColumns: toNum(plane.columns ?? pixel.columns),
+      origRows: toNum(plane.rows ?? pixel.rows),
+      origColSpacing: toNum(plane.columnPixelSpacing),
+      origRowSpacing: toNum(plane.rowPixelSpacing),
+    });
     out.push(imageId);
   }
   return out;

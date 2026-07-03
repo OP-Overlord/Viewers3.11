@@ -5,6 +5,10 @@
 
 import { pdfViewportRegistry } from './pdfViewportRegistry';
 
+// NOTA: la compuerta preventiva MPR/3D ya NO vive aquí. Se aplica de forma
+// CENTRAL interceptando `toggleHangingProtocol`/`setHangingProtocol` en
+// `preRegistration.ts` (más robusto: no depende del cableado del botón).
+
 const getCommandsModule = ({ servicesManager, extensionManager }) => {
   const actions = {
     /**

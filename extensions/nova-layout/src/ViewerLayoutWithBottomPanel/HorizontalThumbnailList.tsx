@@ -618,6 +618,12 @@ const HorizontalThumbnailList = () => {
             // Single frame: activate Pan since there's nothing to scroll
             commandsManager.runCommand('setToolActive', { toolName: 'Pan' });
           }
+          // setToolActive directo (no pasa por la toolbar) → refrescar el estado de la
+          // toolbar para que el header re-sincronice el botón resaltado y no quede
+          // "pegado" el que estaba activo antes de cambiar de serie.
+          servicesManager.services.toolbarService.refreshToolbarState({
+            viewportId: activeViewportId,
+          });
         } catch (error) {
           console.warn('Could not activate tool:', error);
         }
