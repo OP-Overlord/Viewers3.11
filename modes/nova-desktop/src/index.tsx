@@ -213,24 +213,52 @@ function modeFactory({ modeConfiguration }) {
         cineService.setCine({ id: activeViewportId, isPlaying: true });
       });
 
-      // Comando usado por el hanging protocol de XA (hpXA): muestra el cine en
-      // el viewport activo pero PAUSADO.
-      commandsManager.registerCommand('CORNERSTONE', 'novaCineShowPaused', () => {
-        const { cineService, viewportGridService } = servicesManager.services;
-        const activeViewportId = viewportGridService.getActiveViewportId();
-        if (!activeViewportId) {
+      // Muestra el cine VISIBLE pero PAUSADO en un viewport concreto (lo usa el HP
+      // de XA). Idempotente. ORDEN importante: setIsCineEnabled(true) limpia el set
+      // global de "cine cerrado", por eso setViewportCineClosed va al FINAL (si no,
+      // el CinePlayer podría auto-reproducir). El AudioCinePlayer se hace visible
+      // porque el viewport queda "abierto" en cineViewportStore.
+      const showCinePausedForViewport = (viewportId: string) => {
+        if (!viewportId) {
           return;
         }
+        const { cineService } = servicesManager.services;
         cineService.setIsCineEnabled(true);
-        cineViewportStore.open(activeViewportId);
-        cineService.setCine({ id: activeViewportId, isPlaying: false });
+        cineViewportStore.open(viewportId);
+        cineService.setCine({ id: viewportId, isPlaying: false });
+        cineService.setViewportCineClosed(viewportId);
+      };
 
-        // Suprime el autoplay del CinePlayer al cargar el HP de XA: la barra
-        // queda visible (cineViewportStore) pero el cine NO arranca solo. Debe
-        // ir DESPUÉS de setIsCineEnabled, que limpia el set de "cine cerrado".
-        // El CinePlayer marca este displaySet como ya gestionado, por lo que el
-        // primer play/pausa del usuario se respeta sin re-disparar autoplay.
-        cineService.setViewportCineClosed(activeViewportId);
+      // Comando usado por onProtocolEnter del HP de XA (hpXA).
+      //
+      // TIMING: onProtocolEnter corre SÍNCRONO justo tras `_setProtocol`, ANTES de
+      // que el ViewportGridService (estado React) cree el viewport XA. En la carga
+      // inicial `getActiveViewportId()` devuelve `null` (default del
+      // ViewportGridProvider) → hay que esperar (reintento acotado) a que el
+      // viewport activo exista de verdad (con su elemento cornerstone).
+      // Nota: el re-mostrado al cargar OTRA serie (o tras cerrar con Esc) lo cubre
+      // la suscripción a VIEWPORT_DATA_CHANGED más abajo, no este comando.
+      commandsManager.registerCommand('CORNERSTONE', 'novaCineShowPaused', () => {
+        const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
+
+        const tryShow = (attempt = 0) => {
+          const activeViewportId = viewportGridService.getActiveViewportId();
+          const viewport = activeViewportId
+            ? cornerstoneViewportService.getCornerstoneViewport(activeViewportId)
+            : null;
+
+          if (!activeViewportId || !viewport?.element) {
+            // Aún no montado: reintentar hasta ~4s (40 × 100ms) y desistir.
+            if (attempt < 40) {
+              setTimeout(() => tryShow(attempt + 1), 100);
+            }
+            return;
+          }
+
+          showCinePausedForViewport(activeViewportId);
+        };
+
+        tryShow();
       });
 
       // Registrar el hanging protocol de XA (1x1 + cine pausado) solo en este
@@ -422,6 +450,41 @@ function modeFactory({ modeConfiguration }) {
         () => setTimeout(autoActivateStackScroll, 350)
       );
       _activatePanelTriggersSubscriptions.push(stackScrollViewportsSub);
+
+      // Cine PAUSADO por-SERIE bajo el HP de XA. `onProtocolEnter` solo dispara al
+      // ENTRAR al protocolo; al cargar OTRA serie en el mismo viewport —o tras
+      // cerrar el cine con Esc (handleClose → setIsCineEnabled(false))— no se
+      // re-ejecuta, y el newDisplaySetHandler del CinePlayer con cineStartPaused
+      // solo SUPRIME el autoplay, no vuelve a mostrar la barra. VIEWPORT_DATA_CHANGED
+      // sí se emite en cada carga de serie (tras resolver el displaySet, con el
+      // viewport ya válido), así que re-mostramos el cine pausado cuando el protocolo
+      // activo pide cineStartPaused y la serie cargada es de cine (FrameRate / >1 frame).
+      const { cornerstoneViewportService } = servicesManager.services;
+      const cinePausedOnSeriesSub = cornerstoneViewportService.subscribe(
+        cornerstoneViewportService.EVENTS.VIEWPORT_DATA_CHANGED,
+        ({ viewportId }) => {
+          const { hangingProtocolService } = servicesManager.services;
+          const cineStartPaused = Boolean(
+            (hangingProtocolService?.getActiveProtocol?.()?.protocol as any)?.cineStartPaused
+          );
+          if (!cineStartPaused || !viewportId) {
+            return;
+          }
+
+          const uids =
+            viewportGridService.getState().viewports.get(viewportId)?.displaySetInstanceUIDs ?? [];
+          const isCineSeries = uids.some(uid => {
+            const ds = displaySetService.getDisplaySetByUID(uid) as any;
+            return ds?.FrameRate || (ds?.numImageFrames != null && ds.numImageFrames > 1);
+          });
+          if (!isCineSeries) {
+            return;
+          }
+
+          showCinePausedForViewport(viewportId);
+        }
+      );
+      _activatePanelTriggersSubscriptions.push(cinePausedOnSeriesSub);
 
       // Precargar thumbnails para que estén listas cuando se abra el panel
       _thumbnailPreloadSub = preloadThumbnails(servicesManager, extensionManager);

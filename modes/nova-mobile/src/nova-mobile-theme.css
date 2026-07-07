@@ -85,11 +85,18 @@ body:has(.theme-nova-mobile) {
   font-size: 10px;
 }
 
-/* Hover state (inactive buttons) */
-.theme-nova-mobile .mobile-toolbar-scroll button:not(:disabled):hover {
-  border-color: var(--nm-primary) !important;
-  background-color: var(--nm-primary-hover-bg) !important;
-  color: var(--nm-primary) !important;
+/* Hover state (inactive buttons) — SOLO en dispositivos con hover real (mouse).
+ * En táctil el :hover queda PEGADO en el último botón tocado y este estilo es
+ * casi idéntico al activo → el botón "no se apagaba" visualmente al re-tocarlo
+ * hasta tocar otra cosa (el bug NO era de React: la clase cambia en ms, pero
+ * esta regla lo seguía pintando como activo). hover:none en móviles/device-mode
+ * desactiva la regla por completo. */
+@media (hover: hover) {
+  .theme-nova-mobile .mobile-toolbar-scroll button:not(:disabled):hover {
+    border-color: var(--nm-primary) !important;
+    background-color: var(--nm-primary-hover-bg) !important;
+    color: var(--nm-primary) !important;
+  }
 }
 
 /*
@@ -114,10 +121,12 @@ body:has(.theme-nova-mobile) {
   color: var(--nm-primary) !important;
 }
 
-/* Active hover */
-.theme-nova-mobile .mobile-toolbar-scroll button.bg-primary:hover,
-.theme-nova-mobile .mobile-toolbar-scroll button[class*='bg-primary']:hover {
-  background-color: rgba(74, 158, 255, 0.25) !important;
+/* Active hover — solo con hover real (ver nota arriba) */
+@media (hover: hover) {
+  .theme-nova-mobile .mobile-toolbar-scroll button.bg-primary:hover,
+  .theme-nova-mobile .mobile-toolbar-scroll button[class*='bg-primary']:hover {
+    background-color: rgba(74, 158, 255, 0.25) !important;
+  }
 }
 
 /* Disabled buttons */
@@ -134,8 +143,11 @@ body:has(.theme-nova-mobile) {
   background-color: var(--nm-border) !important;
 }
 
-.theme-nova-mobile [class*='hover:bg-primary'][class*='cursor-row-resize']:hover {
-  background-color: var(--nm-primary) !important;
+/* Solo con hover real: en táctil el hover pegado dejaba el handle pintado. */
+@media (hover: hover) {
+  .theme-nova-mobile [class*='hover:bg-primary'][class*='cursor-row-resize']:hover {
+    background-color: var(--nm-primary) !important;
+  }
 }
 
 /* ============================================================ */

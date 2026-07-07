@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { eventTarget } from '@cornerstonejs/core';
+import { Enums as csToolsEnums } from '@cornerstonejs/tools';
 import { Icons } from '@ohif/ui-next';
 import { useSystem, useToolbar } from '@ohif/core';
 import { preserveQueryParameters } from '@ohif/app';
@@ -16,7 +18,7 @@ const toolIconMap: Record<string, string> = {
 };
 
 function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }>) {
-  const { extensionManager, servicesManager, commandsManager } = useSystem();
+  const { extensionManager, servicesManager } = useSystem();
   const { toolbarService, toolGroupService, viewportGridService } = servicesManager.services;
 
   const navigate = useNavigate();
@@ -28,11 +30,18 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     buttonSection: 'primary',
   });
 
-  // Resaltado dirigido por la herramienta activa REAL de cornerstone, LEÍDA EN CADA
-  // RENDER (no cacheada en estado). El `isActive` del toolbarService se queda
-  // desfasado tras un toggle (evaluate.cornerstoneTool sale temprano si el viewport
-  // no resuelve toolGroup), y guardar la herramienta en estado también se quedaba
-  // "pegado" en algunos toggles. Leyéndola aquí, el resaltado SIEMPRE refleja lo real.
+  // Resaltado dirigido por la herramienta activa REAL de cornerstone, CAPTURADA en
+  // estado. CLAVE: la fuente de verdad NO es el toolbarService (su `isActive` se
+  // desfasa tras un toggle) ni un re-lectura manual en un instante elegido a mano
+  // (frágil: si el comando lanza o el evento de toolbar no se emite, el botón se
+  // queda "pegado" hasta cambiar de escena). En su lugar escuchamos el evento
+  // AUTORITATIVO de cornerstone: TOOL_ACTIVATED se dispara SÍNCRONAMENTE dentro de
+  // `setToolActive`, para CUALQUIER vía (tap de toolbar, toggle-off, herramienta
+  // por defecto del viewport, tap de miniatura). Así el resaltado siempre refleja
+  // el estado real, incluido el apagado al re-tocar.
+  const [activeToolName, setActiveToolName] = useState<string | null>(null);
+  const [cineActive, setCineActive] = useState<boolean>(mobileCineStore.isVisible());
+
   const readActiveTool = useCallback((): string | null => {
     try {
       const viewportId = viewportGridService.getActiveViewportId();
@@ -45,22 +54,35 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
     }
   }, [toolGroupService, viewportGridService]);
 
-  // Sólo fuerza re-render en cambios de herramienta/escena/cine; el valor real se
-  // lee en el render (ver `activeToolName`/`cineActive` abajo).
-  const [, bump] = useReducer((x: number) => x + 1, 0);
+  // Mantener el resaltado en sincronía con cambios de herramienta/escena/cine.
   useEffect(() => {
+    const sync = () => {
+      setActiveToolName(readActiveTool());
+      setCineActive(mobileCineStore.isVisible());
+    };
+    sync();
+    // Evento autoritativo, DIRECTO del eventTarget de cornerstone. NO usar el relay
+    // PRIMARY_TOOL_ACTIVATED de toolGroupService: su listener se elimina en
+    // onModeExit (destroy()) y NUNCA se re-suscribe (_init solo corre en el
+    // constructor del singleton) → al volver del listado al mismo estudio el header
+    // dejaba de enterarse de los cambios de herramienta y el resaltado quedaba
+    // congelado en "Desplazar".
+    eventTarget.addEventListener(csToolsEnums.Events.TOOL_ACTIVATED, sync);
     const subs = [
-      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_MODIFIED, bump),
-      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_STATE_MODIFIED, bump),
-      viewportGridService.subscribe(viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED, bump),
-      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, bump),
+      // Canal redundante: TOOL_BAR_MODIFIED se emite síncrono al final de cada
+      // recordInteraction (refreshToolbarState) → segunda vía en el momento del tap.
+      toolbarService.subscribe(toolbarService.EVENTS.TOOL_BAR_MODIFIED, sync),
+      // Respaldos para cambios de escena (no siempre reactivan una herramienta).
+      viewportGridService.subscribe(viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED, sync),
+      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, sync),
     ];
-    const unsubCine = mobileCineStore.subscribe(bump);
+    const unsubCine = mobileCineStore.subscribe(sync);
     return () => {
+      eventTarget.removeEventListener(csToolsEnums.Events.TOOL_ACTIVATED, sync);
       subs.forEach(s => s.unsubscribe());
       unsubCine();
     };
-  }, [toolbarService, viewportGridService]);
+  }, [toolbarService, viewportGridService, readActiveTool]);
 
   // Nombre de la herramienta asociada a un botón (= commandOptions.toolName de los
   // tool buttons; para acciones como Cine/Share cae al id, que nunca coincide con
@@ -93,25 +115,22 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
 
   const handleButtonClick = useCallback(
     (button: any) => {
+      // onInteraction corre el comando SÍNCRONO (setToolActive/toggle de cine
+      // incluido). El evento TOOL_ACTIVATED de cornerstone y el store de cine ya
+      // disparan `sync` dentro de esta misma llamada; la re-lectura directa de abajo
+      // es un tercer canal (cinturón y tirantes para navegadores móviles reales):
+      // al volver de onInteraction el estado de cornerstone YA está actualizado.
       onInteraction({
         itemId: button.id,
         commands: button.componentProps?.commands,
       });
-      // Re-render inmediato + otro en el siguiente frame, por si cornerstone confirma
-      // el cambio de herramienta de forma diferida. El valor se lee fresco en el render.
-      bump();
-      requestAnimationFrame(() => bump());
+      setActiveToolName(readActiveTool());
+      setCineActive(mobileCineStore.isVisible());
     },
-    [onInteraction, bump]
+    [onInteraction, readActiveTool]
   );
 
   const showReturnButton = !!appConfig.showStudyList;
-
-  // Lecturas FRESCAS en cada render (el `bump` fuerza el re-render cuando cambian):
-  //  - herramienta activa real del toolGroup (Pan/Length/WindowLevel…)
-  //  - visibilidad de la barra de cine (para el botón Cine, que es una acción)
-  const activeToolName = readActiveTool();
-  const cineActive = mobileCineStore.isVisible();
 
   // Render logo component
   const renderLogo = () => {

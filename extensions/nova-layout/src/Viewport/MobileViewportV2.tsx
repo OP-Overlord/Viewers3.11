@@ -779,6 +779,16 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
     defaultToolDsKeyRef.current = cineInfo.dsKey;
     const toolName = cineInfo.frameCount > 1 ? 'StackScroll' : 'Pan';
     try {
+      // Si el usuario YA eligió una herramienta (p. ej. tocó Contraste/Medir mientras
+      // la serie cargaba), NO pisarla con el default — solo aplicar sobre las neutras
+      // (Pan/StackScroll). Sin este guard, el default corre al terminar la carga y
+      // "apaga" la herramienta del usuario sin que él haya hecho nada.
+      const active = toolGroupService
+        .getToolGroup('default')
+        ?.getActivePrimaryMouseButtonTool?.();
+      if (active && active !== 'Pan' && active !== 'StackScroll') {
+        return;
+      }
       commandsManager.runCommand('setToolActive', { toolName, toolGroupId: 'default' });
       // Este setToolActive es DIRECTO (no pasa por la toolbar) → hay que avisar a la
       // toolbar para que el header re-sincronice el botón resaltado; si no, el botón
@@ -788,7 +798,7 @@ const MobileViewportV2Impl = React.memo(function MobileViewportV2(props: any) {
       // tool group aún no listo; se reintenta en el próximo ready
       defaultToolDsKeyRef.current = null;
     }
-  }, [status, cineInfo, commandsManager, toolbarService, viewportId]);
+  }, [status, cineInfo, commandsManager, toolbarService, toolGroupService, viewportId]);
 
   // ─── Reacción a cambios REALES de displaySet (post-montaje) ───────────────
   // Solo se dispara cuando displaySets/viewportOptions/dataSource cambian de
