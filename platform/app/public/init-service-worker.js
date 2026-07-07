@@ -25,14 +25,7 @@ if ('function' === typeof importScripts) {
 
     // Add an event listener to detect when the registered
     // service worker has installed but is waiting to activate.
-    wb.addEventListener('waiting', event => {
-      // customize the UI prompt accordingly.
-      const isFirstTimeUpdatedServiceWorkerIsWaiting = event.wasWaitingBeforeRegister === false;
-      console.log(
-        'isFirstTimeUpdatedServiceWorkerIsWaiting',
-        isFirstTimeUpdatedServiceWorkerIsWaiting
-      );
-
+    wb.addEventListener('waiting', () => {
       // Assumes your app has some sort of prompt UI element
       // that a user can either accept or reject.
       // const prompt = createUIPrompt({

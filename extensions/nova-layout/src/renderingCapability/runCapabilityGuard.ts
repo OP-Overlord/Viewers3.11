@@ -50,16 +50,6 @@ export function runCapabilityGuard({
     return;
   }
 
-  // eslint-disable-next-line no-console
-  console.info(
-    `[nova] capabilityGuard ${source} feature=${feature} severity=${assessment.severity}`,
-    {
-      tier: assessment.device.tier,
-      renderer: assessment.device.renderer,
-      series: assessment.series,
-    }
-  );
-
   if (assessment.severity === 'ok') {
     onProceed();
     return;

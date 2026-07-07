@@ -45,7 +45,7 @@ const toolbarButtons: Button[] = [
     id: 'WindowLevel',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-window-level',
+      icon: 'tool-window-level-nova',
       label: 'Contraste',
       tooltip: 'Ajusta el contraste de la imagen',
       commands: toggleMobileTool('WindowLevel'),
@@ -56,7 +56,7 @@ const toolbarButtons: Button[] = [
     id: 'Cine',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-cine',
+      icon: 'tool-cine-nova',
       label: 'Cine',
       tooltip: 'Reproduce la serie como video (automático en US/RF/XA)',
       commands: 'novaMobileToggleCine',
@@ -67,7 +67,7 @@ const toolbarButtons: Button[] = [
     id: 'Share',
     uiType: 'ohif.toolButton',
     props: {
-      icon: 'tool-capture',
+      icon: 'tool-capture-nova',
       label: 'Compartir',
       tooltip: 'Comparte o descarga la imagen actual',
       commands: 'shareViewportImage',

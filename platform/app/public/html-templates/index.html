@@ -28,7 +28,7 @@
     />
     <meta
       name="apple-mobile-web-app-title"
-      content="@ohif/app"
+      content="NOVA Viewer"
     />
     <meta
       name="msapplication-TileColor"
@@ -42,6 +42,22 @@
       name="msapplication-config"
       content="<%= PUBLIC_URL %>assets/browserconfig.xml"
     />
+
+    <!-- Open Graph / Twitter Card: controla el preview al compartir la URL (WhatsApp,
+         Telegram, etc.). Sin esto, cada cliente decide por su cuenta qué imagen usar
+         (favicon, apple-touch-icon...) y el resultado es inconsistente. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NOVA Viewer" />
+    <meta property="og:title" content="NOVA Viewer" />
+    <meta property="og:description" content="Visor de imágenes médicas NOVA" />
+    <meta property="og:image" content="<%= PUBLIC_URL %>assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NOVA Viewer" />
+    <meta name="twitter:description" content="Visor de imágenes médicas NOVA" />
+    <meta name="twitter:image" content="<%= PUBLIC_URL %>assets/og-image.png" />
+
     <script type="text/javascript">
       console.time('scriptToView');
       window.PUBLIC_URL = '<%= PUBLIC_URL %>';

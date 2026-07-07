@@ -57,8 +57,6 @@ export default function preRegistration({
 
     if (allFound) {
       installed = true;
-      // eslint-disable-next-line no-console
-      console.info('[nova] capabilityGuard: comandos MPR/3D interceptados', GUARDED_COMMANDS);
       return;
     }
 

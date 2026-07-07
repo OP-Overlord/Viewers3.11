@@ -543,7 +543,6 @@ function modeFactory({ modeConfiguration }) {
 
           cycleActive = true;
 
-          console.debug('[NOVA] hover borde izquierdo → abrir panel (click botón)');
           btn.click(); // abrir panel
 
           // Tras un pequeño delay, medimos el panel y enganchamos pointermove
@@ -555,7 +554,6 @@ function modeFactory({ modeConfiguration }) {
               const rect = panel.getBoundingClientRect();
               // umbral un poco más allá del borde derecho del panel
               thresholdX = rect.right + 20;
-              console.debug('[NOVA] thresholdX calculado:', thresholdX, 'rect:', rect);
             } else {
               console.warn('[NOVA] panel no encontrado al calcular threshold, usando 350');
             }
@@ -565,7 +563,6 @@ function modeFactory({ modeConfiguration }) {
               if (evt.clientX > thresholdX) {
                 const btnInner = getButton();
                 if (btnInner) {
-                  console.debug('[NOVA] pointer fuera de área → cerrar panel (click botón)');
                   btnInner.click();
                 }
                 window.removeEventListener('pointermove', onPointerMove, true);

@@ -38,8 +38,6 @@ function applyMobileConfiguration(customizationService) {
     'viewportOverlay.bottomRight': { $set: [] },
     'ohif.tours': { $set: [] },
   });
-
-  console.log('[Nova Mobile] Mobile configuration applied (overlays removed)');
 }
 
 /**
@@ -84,8 +82,6 @@ function configureMobileTransferSyntax(extensionManager) {
     // requestTransferSyntaxUID is only used when acceptHeader is empty,
     // but set it for clarity / future compatibility.
     config.requestTransferSyntaxUID = '1.2.840.10008.1.2.4.50'; // JPEG Baseline
-
-    console.log('[Nova Mobile] Transfer syntax configured (JPEG-first for mobile)');
   } catch (error) {
     console.error('[Nova Mobile] Failed to configure transfer syntax:', error);
   }
@@ -182,7 +178,6 @@ function modeFactory({ modeConfiguration }) {
       // 2D) evita por completo ese camino y es fiable en cualquier dispositivo.
       // Se restaura en onModeExit. Debe ir ANTES de montar los viewports.
       setUseCPURendering(true);
-      console.log('[Nova Mobile] CPU rendering FORZADO (evita crash WebGL/vtk en GPU móvil)');
 
       // Apply mobile theme class (scopes all nova-mobile-theme.css rules)
       const root = document.getElementById('root');

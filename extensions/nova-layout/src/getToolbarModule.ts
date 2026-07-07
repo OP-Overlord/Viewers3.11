@@ -9,8 +9,7 @@
  *
  * El toolbar de OHIF permite combinar varios evaluadores en un arreglo y
  * deshabilita el botón si CUALQUIERA devuelve `disabled: true`
- * (ver ToolbarService._mapEvaluate). El `console.info` de carga sirve de chequeo
- * de despliegue (si no aparece, el bundle servido es viejo / cacheado por el SW).
+ * (ver ToolbarService._mapEvaluate).
  */
 
 import { assessViewportCapability, type HeavyFeature } from './renderingCapability';
@@ -19,11 +18,6 @@ const DEFAULT_DISABLED_TEXT =
   'Este equipo no cumple los requisitos mínimos para MPR / 3D con esta serie';
 
 export default function getToolbarModule({ servicesManager, extensionManager }: withAppTypes) {
-  // Diagnóstico de despliegue: si NO ves este log en consola, el bundle servido
-  // es viejo (revisa el service worker / caché del navegador).
-  // eslint-disable-next-line no-console
-  console.info('[nova] getToolbarModule cargado → evaluate.novaHeavyRenderingCapable registrado');
-
   return [
     {
       name: 'evaluate.novaHeavyRenderingCapable',

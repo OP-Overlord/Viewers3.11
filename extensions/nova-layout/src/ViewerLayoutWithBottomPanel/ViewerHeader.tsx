@@ -13,8 +13,9 @@ const toolIconMap: Record<string, string> = {
   Pan: 'tool-move',
   StackScroll: 'tool-stack-scroll',
   Length: 'tool-length',
-  WindowLevel: 'tool-window-level',
-  Capture: 'tool-capture',
+  WindowLevel: 'tool-window-level-nova',
+  Capture: 'tool-capture-nova',
+  Cine: 'tool-cine-nova',
 };
 
 function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }>) {
