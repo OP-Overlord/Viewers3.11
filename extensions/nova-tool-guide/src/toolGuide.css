@@ -1,20 +1,37 @@
 /*
- * Estilos de la guía de herramientas de medición (nova-tool-guide). Prefijo
- * `nova-guide-` y estilos autocontenidos (sin Tailwind ni tema de OHIF), de
- * modo que el widget se ve igual aunque se monte vía portal en <body>, fuera
- * del árbol de la app.
+ * nova-tool-guide — "ficha técnica de medición radiológica".
  *
- * Tipografía: 'Inter' (la misma que carga el proyecto principal).
+ * Dirección: un instrumento de lectura anclado en la superficie NAVY real del
+ * visor (no un glass genérico con degradados). Superficies, bordes y acentos
+ * derivan de los tokens del producto (platform/ui-next/src/tailwind.css):
+ *   --background        #0A1628   navy profundo
+ *   --background-elev.  #0D1B2E   tarjeta
+ *   --background-panel  #0F1F30   panel/sección
+ *   --border            #1A2940   borde hairline
+ *   --primary  #4A9EFF · --highlight #00D9FF · --secondary #5B82FF
+ *   --success  #10B981 · --warning  #F59E0B  · --error     #EF4444
  *
- * Acentos = paleta azul del proyecto (platform/ui-next/src/tailwind.css):
- *   #4A9EFF  --primary       (azul médico)
- *   #00D9FF  --highlight     (cian brillante, = --primary-hover)
- *   #5B82FF  --secondary     (azul secundario)
- * Los tonos de estado clínico (verde/ámbar/naranja de la interpretación) son
- * semánticos y NO forman parte del sistema de acentos.
+ * Estilos autocontenidos (prefijo nova-guide-) porque el widget se monta vía
+ * portal en <body>, fuera del árbol de OHIF. Color = significado; sin degradados
+ * decorativos. Cifras/códigos en monoespaciada (lectura de instrumento).
  */
 
 .nova-guide-root {
+  --ng-card: #000000;
+  --ng-panel: #0c0e13;
+  --ng-well: #000000;
+  --ng-border: #1a2940;
+  --ng-border-strong: #243a53;
+  --ng-fg: #ffffff;
+  --ng-fg-2: #b4c2d4;
+  --ng-fg-muted: #7b8b9f;
+  --ng-primary: #4a9eff;
+  --ng-cyan: #00d9ff;
+  --ng-secondary: #5b82ff;
+  --ng-warning: #f59e0b;
+  --ng-error: #ef4444;
+  --ng-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
   position: fixed;
   right: 18px;
   bottom: calc(18px + env(safe-area-inset-bottom, 0px));
@@ -34,9 +51,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
   background: transparent;
 }
 
@@ -44,33 +61,35 @@
   display: block;
 }
 
-/* --- Burbuja compacta --------------------------------------------------- */
+/* ======================================================================== */
+/* BURBUJA COMPACTA — etiqueta de instrumento                               */
+/* ======================================================================== */
 .nova-guide-bubble {
   position: relative;
   display: inline-flex;
-  align-items: center;
-  max-width: 388px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(22, 24, 32, 0.92);
-  backdrop-filter: blur(8px);
-  color: #e8eaf0;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
+  align-items: stretch;
+  max-width: 390px;
+  border: 1px solid var(--ng-border);
+  border-radius: 12px;
+  background: var(--ng-card);
+  color: var(--ng-fg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: nova-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .nova-guide-bubble:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  border-color: var(--ng-border-strong);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
 }
 
 .nova-guide-bubble-main {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 6px 14px 12px;
+  gap: 11px;
+  padding: 11px 6px 13px 12px;
   border: none;
   background: transparent;
   color: inherit;
@@ -78,6 +97,14 @@
   text-align: left;
   cursor: pointer;
   min-width: 0;
+}
+
+.nova-guide-bubble-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 9px 1px;
+  background: var(--ng-border);
+  flex: 0 0 1px;
 }
 
 .nova-guide-bubble-texts {
@@ -88,18 +115,29 @@
 }
 
 .nova-guide-bubble-title {
-  font-size: 14.5px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--ng-fg);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.nova-guide-bubble-glyph {
+  font-family: var(--ng-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ng-primary);
+  flex: 0 0 auto;
+}
+
 .nova-guide-bubble-hint {
-  font-size: 12.5px;
-  color: #9aa3b2;
+  font-size: 12px;
+  color: var(--ng-fg-muted);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -108,19 +146,17 @@
 
 .nova-guide-bubble-close {
   align-self: flex-start;
-  margin: 5px 8px 0 0;
+  margin: 6px 7px 0 0;
 }
 
-/* Barra de auto-cierre (5 s). Se reinicia al re-activar la tool y se pausa
-   con el ratón encima. */
+/* Barra de auto-cierre (5 s). Se reinicia al re-activar la tool; el hover pausa. */
 .nova-guide-progress {
   position: absolute;
   left: 0;
   bottom: 0;
-  height: 3px;
+  height: 2px;
   width: 100%;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(90deg, #4a9eff 0%, #00d9ff 100%);
+  background: var(--ng-cyan);
   transform-origin: left center;
   animation: nova-guide-countdown 5s linear forwards;
 }
@@ -133,168 +169,277 @@
 .nova-guide-close {
   border: none;
   background: transparent;
-  color: #9aa3b2;
-  font-size: 22px;
+  color: var(--ng-fg-muted);
+  font-size: 21px;
   line-height: 1;
   cursor: pointer;
   padding: 2px 7px;
-  border-radius: 8px;
+  border-radius: 7px;
   transition: background 140ms ease, color 140ms ease;
 }
 
 .nova-guide-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ng-fg);
 }
 
-/* --- Tarjeta expandida --------------------------------------------------- */
+.nova-guide-close:focus-visible {
+  outline: 2px solid var(--ng-cyan);
+  outline-offset: 1px;
+}
+
+/* ======================================================================== */
+/* TARJETA EXPANDIDA                                                         */
+/* ======================================================================== */
 .nova-guide-card {
-  width: 448px;
+  width: 452px;
   max-width: calc(100vw - 32px);
-  max-height: min(82vh, 780px);
+  max-height: min(84vh, 800px);
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(22, 24, 32, 0.96);
-  backdrop-filter: blur(10px);
-  color: #e8eaf0;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--ng-border);
+  border-radius: 16px;
+  background: var(--ng-card);
+  color: var(--ng-fg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
   animation: nova-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nova-guide-card-header {
+/* --- Cabecera: identidad + readout de la medida ------------------------- */
+.nova-guide-header {
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 0 0 auto;
+  padding: 14px 14px 13px;
+  border-bottom: 1px solid var(--ng-border);
+  /* franja superior sutil de acento, sin degradado decorativo */
+  box-shadow: inset 0 2px 0 0 rgba(74, 158, 255, 0.5);
 }
 
 .nova-guide-id {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  line-height: 1.15;
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.nova-guide-name {
-  font-size: 16px;
+.nova-guide-eyebrow {
+  font-family: var(--ng-mono);
+  font-size: 10px;
   font-weight: 600;
-  color: #fff;
-}
-
-.nova-guide-badge {
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #9aa3b2;
+  color: var(--ng-fg-muted);
 }
 
-.nova-guide-context {
+.nova-guide-name {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--ng-fg);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.nova-guide-specialty {
+  font-size: 12px;
+  color: var(--ng-primary);
+}
+
+.nova-guide-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   flex: 0 0 auto;
-  margin-top: 12px;
-  padding: 8px 12px;
-  border-radius: 11px;
-  background: rgba(74, 158, 255, 0.12);
-  border: 1px solid rgba(74, 158, 255, 0.28);
-  font-size: 13px;
-  color: #a9d0ff;
+  min-width: 58px;
+  padding: 6px 10px;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 9px;
+  background: var(--ng-well);
 }
 
-/* Cuerpo con scroll propio si el contenido es alto. */
+.nova-guide-readout-glyph {
+  font-family: var(--ng-mono);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ng-cyan);
+}
+
+.nova-guide-readout-unit {
+  font-family: var(--ng-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--ng-fg-muted);
+}
+
+/* --- Línea de metadatos (proyección) ------------------------------------ */
+.nova-guide-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 15px;
+  border-bottom: 1px solid var(--ng-border);
+  background: var(--ng-panel);
+}
+
+.nova-guide-meta-key {
+  font-family: var(--ng-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ng-fg-muted);
+  flex: 0 0 auto;
+}
+
+.nova-guide-meta-val {
+  font-size: 12.5px;
+  color: var(--ng-fg-2);
+  line-height: 1.35;
+}
+
+/* --- Cuerpo scrollable --------------------------------------------------- */
 .nova-guide-body {
   flex: 1 1 auto;
   overflow-y: auto;
-  margin-top: 6px;
-  padding-right: 6px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--ng-border-strong) transparent;
 }
 
 .nova-guide-body::-webkit-scrollbar {
-  width: 8px;
+  width: 9px;
 }
 
 .nova-guide-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  background: var(--ng-border-strong);
+  border-radius: 9px;
+  border: 2px solid var(--ng-card);
 }
 
-/* --- Sección delimitada ------------------------------------------------- */
+/* ======================================================================== */
+/* SECCIÓN DELIMITADA — marco consistente, contenido diferenciado           */
+/* ======================================================================== */
 .nova-guide-section {
-  margin-top: 12px;
-  padding: 13px 15px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.025);
+  /* flex-shrink:0 → el cuerpo hace scroll en vez de encoger y recortar las
+     secciones (que llevan overflow:hidden por las esquinas redondeadas). */
+  flex: 0 0 auto;
+  border: 1px solid var(--ng-border);
+  border-radius: 11px;
+  background: var(--ng-panel);
+  overflow: hidden;
 }
 
-.nova-guide-section-title {
-  margin: 0 0 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(74, 158, 255, 0.22);
-  font-size: 13px;
+.nova-guide-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--ng-border);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.nova-guide-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ng-mono);
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: #4a9eff;
+  color: var(--ng-primary);
 }
 
-/* --- Uso clínico -------------------------------------------------------- */
-.nova-guide-clinical-use {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: #c7ccd6;
+.nova-guide-section-label::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--ng-primary);
+  flex: 0 0 6px;
 }
 
-/* --- Referencias anatómicas --------------------------------------------- */
-.nova-guide-anatomy-lead {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: #c7ccd6;
-}
-
-.nova-guide-anatomy-lead strong {
-  color: #fff;
-  font-weight: 600;
-}
-
-.nova-guide-anatomy {
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: #c7ccd6;
-}
-
-.nova-guide-anatomy li {
-  margin-top: 8px;
-}
-
-.nova-guide-pop-chip {
-  display: inline-block;
-  margin-right: 7px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: rgba(74, 158, 255, 0.12);
-  border: 1px solid rgba(74, 158, 255, 0.28);
-  font-size: 11.5px;
-  color: #a9d0ff;
+.nova-guide-section-meta {
+  font-family: var(--ng-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--ng-fg-muted);
   white-space: nowrap;
 }
 
-/* --- Diagrama de trazo -------------------------------------------------- */
+.nova-guide-section-body {
+  padding: 12px 13px 13px;
+}
+
+/* --- Prosa --------------------------------------------------------------- */
+.nova-guide-prose {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.58;
+  color: var(--ng-fg-2);
+}
+
+.nova-guide-prose strong {
+  color: var(--ng-fg);
+  font-weight: 600;
+}
+
+/* --- Anatomía (lista de definición por población) ----------------------- */
+.nova-guide-anatomy {
+  margin: 12px 0 0;
+  padding: 11px 0 0;
+  border-top: 1px solid var(--ng-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nova-guide-anatomy-row {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  gap: 4px 12px;
+  align-items: start;
+}
+
+.nova-guide-pop-tag {
+  margin: 0;
+  font-family: var(--ng-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--ng-cyan);
+  text-transform: uppercase;
+}
+
+.nova-guide-anatomy-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ng-fg-2);
+}
+
+/* --- Diagrama (lámina técnica) ------------------------------------------ */
+.nova-guide-figure {
+  margin: 0;
+}
+
 .nova-guide-diagram {
   padding: 8px;
-  border-radius: 12px;
-  background: radial-gradient(120% 120% at 50% 20%, rgba(74, 158, 255, 0.14) 0%, rgba(10, 12, 18, 0.55) 70%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: var(--ng-well);
+  border: 1px solid var(--ng-border);
   aspect-ratio: 320 / 200;
 }
 
@@ -304,181 +449,266 @@
   height: 100%;
 }
 
-/* --- Pasos para el trazo ------------------------------------------------ */
+.nova-guide-figcaption {
+  margin-top: 8px;
+  font-family: var(--ng-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  color: var(--ng-fg-muted);
+}
+
+/* --- Pasos (libro mayor con guía vertical) ------------------------------ */
 .nova-guide-steps {
+  position: relative;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.nova-guide-step {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
+/* guía vertical que conecta los números */
+.nova-guide-steps::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: var(--ng-border-strong);
 }
 
-.nova-guide-step:first-child {
-  margin-top: 0;
+.nova-guide-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 25px 1fr;
+  gap: 0 13px;
+  padding-bottom: 14px;
+}
+
+.nova-guide-step:last-child {
+  padding-bottom: 0;
 }
 
 .nova-guide-step-num {
-  flex: 0 0 25px;
+  position: relative;
+  z-index: 1;
   width: 25px;
   height: 25px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12.5px;
+  font-family: var(--ng-mono);
+  font-size: 12px;
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #4a9eff 0%, #00d9ff 100%);
+  color: var(--ng-primary);
+  background: var(--ng-well);
+  border: 1px solid var(--ng-border-strong);
 }
 
 .nova-guide-step-texts {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-top: 2px;
+  padding-top: 3px;
+  min-width: 0;
 }
 
 .nova-guide-step-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: #fff;
+  color: var(--ng-fg);
   line-height: 1.35;
 }
 
 .nova-guide-step-detail {
-  font-size: 13px;
-  color: #9aa3b2;
+  font-size: 12.5px;
+  color: var(--ng-fg-muted);
   line-height: 1.45;
 }
 
-/* --- Interpretación clínica --------------------------------------------- */
+/* --- Valores de referencia (tabla-lectura) ------------------------------ */
 .nova-guide-values {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+  border: 1px solid var(--ng-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ng-well);
 }
 
 .nova-guide-value-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 13px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border-left: 3px solid transparent;
-  font-size: 13.5px;
+  gap: 0 11px;
+  padding: 9px 12px 9px 0;
+  border-top: 1px solid var(--ng-border);
+}
+
+.nova-guide-value-row:first-child {
+  border-top: none;
+}
+
+.nova-guide-value-tick {
+  align-self: stretch;
+  width: 3px;
+  background: var(--ng-fg-muted);
 }
 
 .nova-guide-value-label {
+  font-size: 13px;
   font-weight: 600;
-  color: #e8eaf0;
+  color: var(--ng-fg-2);
+  line-height: 1.35;
 }
 
 .nova-guide-value-detail {
-  color: #9aa3b2;
+  font-family: var(--ng-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ng-fg);
   text-align: right;
-  white-space: nowrap;
+  line-height: 1.35;
 }
 
-/* Estado clínico "normal": se resalta con el azul de la paleta. */
-.nova-guide-tone-normal {
-  background: rgba(74, 158, 255, 0.12);
-  border-left-color: #4a9eff;
+/* Estado clínico por tono: tick + color del valor. También va en el texto
+   de la etiqueta (Normal/Disminuido/Aumentado), no sólo en el color. */
+.nova-guide-tone-normal .nova-guide-value-tick {
+  background: var(--ng-primary);
 }
 .nova-guide-tone-normal .nova-guide-value-detail {
-  color: #7cc0ff;
+  color: var(--ng-primary);
   font-weight: 700;
 }
-
-/* Estados de alerta: colores semánticos (no acentos de marca). */
-.nova-guide-tone-low {
-  border-left-color: #f5b14c;
+.nova-guide-tone-low .nova-guide-value-tick {
+  background: var(--ng-warning);
 }
-
-.nova-guide-tone-high {
-  border-left-color: #ff7a59;
+.nova-guide-tone-low .nova-guide-value-detail {
+  color: var(--ng-warning);
+}
+.nova-guide-tone-high .nova-guide-value-tick {
+  background: var(--ng-error);
+}
+.nova-guide-tone-high .nova-guide-value-detail {
+  color: var(--ng-error);
 }
 
 .nova-guide-interpretation {
-  margin: 12px 0 0;
-  font-size: 13.5px;
+  margin: 11px 0 0;
+  font-size: 12.5px;
   line-height: 1.55;
-  color: #c7ccd6;
+  color: var(--ng-fg-muted);
 }
 
-/* --- Bibliografía ------------------------------------------------------- */
+/* --- Fuente -------------------------------------------------------------- */
 .nova-guide-citation {
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   font-style: italic;
   line-height: 1.5;
-  color: #9aa3b2;
+  color: var(--ng-fg-muted);
 }
 
 .nova-guide-link {
   display: inline-block;
-  margin-top: 8px;
-  font-size: 13.5px;
+  margin-top: 9px;
+  font-size: 13px;
   font-weight: 600;
-  color: #4a9eff;
+  color: var(--ng-primary);
   text-decoration: none;
 }
 
 .nova-guide-link:hover {
-  color: #00d9ff;
+  color: var(--ng-cyan);
   text-decoration: underline;
 }
 
-/* --- Nota orientativa --------------------------------------------------- */
-.nova-guide-disclaimer {
-  margin: 12px 0 2px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.16);
-  font-size: 12px;
-  color: #8b93a2;
-  line-height: 1.45;
+.nova-guide-link:focus-visible {
+  outline: 2px solid var(--ng-cyan);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
-/* --- Footer ------------------------------------------------------------- */
+/* --- Nota orientativa ---------------------------------------------------- */
+.nova-guide-disclaimer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.07);
+  font-size: 12px;
+  color: #e7c88a;
+  line-height: 1.4;
+}
+
+.nova-guide-disclaimer-mark {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ng-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ng-well);
+  background: var(--ng-warning);
+}
+
+/* --- Footer -------------------------------------------------------------- */
 .nova-guide-footer {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--ng-border);
+  background: var(--ng-panel);
+}
+
+.nova-guide-footer-hint {
+  font-family: var(--ng-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ng-fg-muted);
 }
 
 .nova-guide-primary {
-  border: none;
-  border-radius: 11px;
-  padding: 10px 22px;
-  font-size: 14px;
+  border: 1px solid var(--ng-primary);
+  border-radius: 9px;
+  padding: 9px 20px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #fff;
+  color: var(--ng-well);
   cursor: pointer;
-  background: linear-gradient(135deg, #4a9eff 0%, #00d9ff 100%);
-  transition: filter 140ms ease, transform 140ms ease;
-  white-space: nowrap;
+  background: var(--ng-primary);
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
 .nova-guide-primary:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
+  background: var(--ng-cyan);
+  border-color: var(--ng-cyan);
+}
+
+.nova-guide-primary:active {
+  transform: translateY(1px);
+}
+
+.nova-guide-primary:focus-visible {
+  outline: 2px solid var(--ng-cyan);
+  outline-offset: 2px;
 }
 
 /* --- Animaciones --------------------------------------------------------- */
 @keyframes nova-guide-in {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.98);
+    transform: translateY(10px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -499,13 +729,22 @@
 @media (max-width: 640px) {
   .nova-guide-root {
     right: 12px;
+    left: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
   .nova-guide-bubble {
-    max-width: calc(100vw - 24px);
+    max-width: none;
+    width: 100%;
   }
   .nova-guide-card {
-    width: calc(100vw - 24px);
+    width: 100%;
+    max-width: none;
+    max-height: min(80vh, 800px);
+  }
+  /* En móvil el tag de población pasa a fila propia sobre el texto. */
+  .nova-guide-anatomy-row {
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 }
 
@@ -513,5 +752,8 @@
   .nova-guide-bubble,
   .nova-guide-card {
     animation: none;
+  }
+  .nova-guide-progress {
+    animation-duration: 0s;
   }
 }

@@ -145,114 +145,181 @@ export const ToolGuideAgent: React.FC = () => {
       aria-live="polite"
     >
       {expanded ? (
-        <div className="nova-guide-card">
-          <div className="nova-guide-card-header">
+        <div
+          className="nova-guide-card"
+          role="dialog"
+          aria-label={`Guía de medición: ${guide.title}`}
+        >
+          <header className="nova-guide-header">
             <GuideAvatar />
             <div className="nova-guide-id">
+              <span className="nova-guide-eyebrow">Guía de medición</span>
               <span className="nova-guide-name">{guide.title}</span>
-              <span className="nova-guide-badge">{guide.specialty}</span>
+              <span className="nova-guide-specialty">{guide.specialty}</span>
+            </div>
+            <div className="nova-guide-readout">
+              <span className="nova-guide-readout-glyph">{guide.metric.glyph}</span>
+              <span className="nova-guide-readout-unit">{guide.metric.unit}</span>
             </div>
             <button
               className="nova-guide-close"
               onClick={dismiss}
               aria-label="Cerrar"
-              title="Cerrar"
+              title="Cerrar (Esc)"
             >
               ×
             </button>
-          </div>
+          </header>
 
-          <div className="nova-guide-context">{guide.context}</div>
+          <div className="nova-guide-meta">
+            <span className="nova-guide-meta-key">Proyección</span>
+            <span className="nova-guide-meta-val">{guide.context}</span>
+          </div>
 
           <div className="nova-guide-body">
             <section className="nova-guide-section">
-              <div className="nova-guide-section-title">Uso clínico</div>
-              <p className="nova-guide-clinical-use">{guide.clinicalUse}</p>
+              <div className="nova-guide-section-head">
+                <span className="nova-guide-section-label">Uso clínico</span>
+              </div>
+              <div className="nova-guide-section-body">
+                <p className="nova-guide-prose">{guide.clinicalUse}</p>
+              </div>
             </section>
 
             <section className="nova-guide-section">
-              <div className="nova-guide-section-title">Referencias anatómicas</div>
-              <div className="nova-guide-anatomy-lead">
-                <RichText text={guide.anatomyLead} />
+              <div className="nova-guide-section-head">
+                <span className="nova-guide-section-label">Referencias anatómicas</span>
               </div>
-              {guide.anatomy.length > 0 && (
-                <ul className="nova-guide-anatomy">
-                  {guide.anatomy.map((item, i) => (
-                    <li key={i}>
-                      {item.population && (
-                        <span className="nova-guide-pop-chip">{item.population}</span>
-                      )}
-                      <span>{item.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="nova-guide-section-body">
+                <p className="nova-guide-prose">
+                  <RichText text={guide.anatomyLead} />
+                </p>
+                {guide.anatomy.length > 0 && (
+                  <dl className="nova-guide-anatomy">
+                    {guide.anatomy.map((item, i) => (
+                      <div
+                        className="nova-guide-anatomy-row"
+                        key={i}
+                      >
+                        {item.population && (
+                          <dt className="nova-guide-pop-tag">{item.population}</dt>
+                        )}
+                        <dd className="nova-guide-anatomy-text">{item.text}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
             </section>
 
             {Diagram && (
               <section className="nova-guide-section">
-                <div className="nova-guide-section-title">Diagrama de trazo</div>
-                <div className="nova-guide-diagram">
-                  <Diagram />
+                <div className="nova-guide-section-head">
+                  <span className="nova-guide-section-label">Diagrama de trazo</span>
+                  <span className="nova-guide-section-meta">esquema</span>
+                </div>
+                <div className="nova-guide-section-body">
+                  <figure className="nova-guide-figure">
+                    <div className="nova-guide-diagram">
+                      <Diagram />
+                    </div>
+                    <figcaption className="nova-guide-figcaption">
+                      Construcción geométrica de la medida (no es una radiografía real).
+                    </figcaption>
+                  </figure>
                 </div>
               </section>
             )}
 
             <section className="nova-guide-section">
-              <div className="nova-guide-section-title">Pasos para el trazo</div>
-              <ol className="nova-guide-steps">
-                {guide.steps.map((step, i) => (
-                  <li
-                    className="nova-guide-step"
-                    key={i}
-                  >
-                    <span className="nova-guide-step-num">{i + 1}</span>
-                    <span className="nova-guide-step-texts">
-                      <span className="nova-guide-step-title">{step.title}</span>
-                      {step.detail && (
-                        <span className="nova-guide-step-detail">{step.detail}</span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section className="nova-guide-section">
-              <div className="nova-guide-section-title">Interpretación clínica</div>
-              <div className="nova-guide-values">
-                {guide.values.map((row, i) => (
-                  <div
-                    className={`nova-guide-value-row nova-guide-tone-${row.tone ?? 'neutral'}`}
-                    key={i}
-                  >
-                    <span className="nova-guide-value-label">{row.label}</span>
-                    <span className="nova-guide-value-detail">{row.detail}</span>
-                  </div>
-                ))}
+              <div className="nova-guide-section-head">
+                <span className="nova-guide-section-label">Pasos para el trazo</span>
+                <span className="nova-guide-section-meta">{guide.steps.length} pasos</span>
               </div>
-              <p className="nova-guide-interpretation">{guide.interpretation}</p>
+              <div className="nova-guide-section-body">
+                <ol className="nova-guide-steps">
+                  {guide.steps.map((step, i) => (
+                    <li
+                      className="nova-guide-step"
+                      key={i}
+                    >
+                      <span className="nova-guide-step-num">{i + 1}</span>
+                      <span className="nova-guide-step-texts">
+                        <span className="nova-guide-step-title">{step.title}</span>
+                        {step.detail && (
+                          <span className="nova-guide-step-detail">{step.detail}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </section>
 
             <section className="nova-guide-section">
-              <div className="nova-guide-section-title">Referencia bibliográfica</div>
-              <p className="nova-guide-citation">{guide.reference.citation}</p>
-              <a
-                className="nova-guide-link"
-                href={guide.reference.url}
-                target="_blank"
-                rel="noreferrer noopener"
-              >
-                {guide.reference.urlLabel} ↗
-              </a>
+              <div className="nova-guide-section-head">
+                <span className="nova-guide-section-label">Valores de referencia</span>
+                <span className="nova-guide-section-meta">{guide.metric.unit}</span>
+              </div>
+              <div className="nova-guide-section-body">
+                <div
+                  className="nova-guide-values"
+                  role="table"
+                >
+                  {guide.values.map((row, i) => (
+                    <div
+                      className={`nova-guide-value-row nova-guide-tone-${row.tone ?? 'neutral'}`}
+                      role="row"
+                      key={i}
+                    >
+                      <span
+                        className="nova-guide-value-tick"
+                        aria-hidden="true"
+                      />
+                      <span
+                        className="nova-guide-value-label"
+                        role="cell"
+                      >
+                        {row.label}
+                      </span>
+                      <span
+                        className="nova-guide-value-detail"
+                        role="cell"
+                      >
+                        {row.detail}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="nova-guide-interpretation">{guide.interpretation}</p>
+              </div>
+            </section>
+
+            <section className="nova-guide-section">
+              <div className="nova-guide-section-head">
+                <span className="nova-guide-section-label">Fuente</span>
+              </div>
+              <div className="nova-guide-section-body">
+                <p className="nova-guide-citation">{guide.reference.citation}</p>
+                <a
+                  className="nova-guide-link"
+                  href={guide.reference.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {guide.reference.urlLabel} ↗
+                </a>
+              </div>
             </section>
 
             <p className="nova-guide-disclaimer">
+              <span className="nova-guide-disclaimer-mark">!</span>
               Guía orientativa: no reemplaza el juicio clínico.
             </p>
           </div>
 
           <div className="nova-guide-footer">
+            <span className="nova-guide-footer-hint">Esc para cerrar</span>
             <button
               className="nova-guide-primary"
               onClick={dismiss}
@@ -276,11 +343,18 @@ export const ToolGuideAgent: React.FC = () => {
             title="Ver la guía de esta medición"
           >
             <GuideAvatar />
+            <span className="nova-guide-bubble-divider" aria-hidden="true" />
             <span className="nova-guide-bubble-texts">
-              <span className="nova-guide-bubble-title">{guide.title}</span>
-              <span className="nova-guide-bubble-hint">
-                Ver guía: uso, anatomía y valores de referencia
+              <span className="nova-guide-bubble-title">
+                <span
+                  className="nova-guide-bubble-glyph"
+                  aria-hidden="true"
+                >
+                  {guide.metric.glyph}
+                </span>
+                {guide.title}
               </span>
+              <span className="nova-guide-bubble-hint">Guía de medición · toca para abrir</span>
             </span>
           </button>
           <button

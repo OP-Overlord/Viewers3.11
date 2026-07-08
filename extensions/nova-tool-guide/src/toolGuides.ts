@@ -38,6 +38,8 @@ export interface ToolGuide {
   /** Nombre clínico mostrado en la burbuja y la cabecera. */
   title: string;
   specialty: string;
+  /** Símbolo y unidad de la medida (cabecera tipo lectura de instrumento). */
+  metric: { glyph: string; unit: string };
   /** Proyección/estudio donde se aplica la medida. */
   context: string;
   /** Descripción breve del uso clínico de la herramienta. */
@@ -64,6 +66,7 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'CobbAngle',
     title: 'Ángulo de Cobb',
     specialty: 'Ortopedia · Columna',
+    metric: { glyph: '∠', unit: 'grados (°)' },
     context: 'Radiografía PA de columna total, en bipedestación',
     clinicalUse:
       'Cuantifica la magnitud de una curva escoliótica y su seguimiento en el tiempo. Es la medida estándar para decidir observación, órtesis o cirugía en la escoliosis.',
@@ -117,6 +120,7 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'CardioThoracicIndex',
     title: 'Índice Cardiotorácico (ICT)',
     specialty: 'Cardiología · Tórax',
+    metric: { glyph: 'C/T', unit: 'índice' },
     context: 'Radiografía PA de tórax en inspiración adecuada',
     clinicalUse:
       'Detecta el aumento de la silueta cardíaca (cardiomegalia o derrame pericárdico) como cribado rápido en la radiografía de tórax.',
@@ -169,6 +173,7 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'KiteAngle',
     title: 'Ángulo de Kite (talocalcáneo AP)',
     specialty: 'Ortopedia · Pie',
+    metric: { glyph: '∠', unit: 'grados (°)' },
     context: 'Radiografía dorsoplantar (AP) del pie, idealmente con carga',
     clinicalUse:
       'Evalúa la alineación del retropié cuantificando la divergencia entre astrágalo y calcáneo. Ayuda a diferenciar el pie varo (equinovaro) del pie plano valgo.',
@@ -218,6 +223,7 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'HilgenreinerAngle',
     title: 'Ángulo Acetabular (Hilgenreiner)',
     specialty: 'Ortopedia · Cadera pediátrica',
+    metric: { glyph: '∠', unit: 'grados (°)' },
     context: 'Radiografía AP de pelvis en lactantes y niños',
     clinicalUse:
       'Valora la displasia del desarrollo de la cadera (DDC) midiendo la inclinación del techo acetabular respecto a la horizontal pélvica. A mayor ángulo, menor cobertura de la cabeza femoral.',
@@ -271,6 +277,7 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'TonnisAngle',
     title: 'Ángulo de Tönnis',
     specialty: 'Ortopedia · Cadera',
+    metric: { glyph: '∠', unit: 'grados (°)' },
     context: 'Radiografía AP de pelvis en esqueleto maduro',
     clinicalUse:
       'Mide la inclinación del techo de carga acetabular. Valora la displasia (con inestabilidad) y la sobre-cobertura (pinzamiento femoroacetabular tipo pincer) en adolescentes y adultos.',
@@ -319,9 +326,10 @@ const toolGuides: Record<string, ToolGuide> = {
     toolName: 'InsallSalvatiIndex',
     title: 'Índice de Insall-Salvati',
     specialty: 'Ortopedia · Rodilla',
+    metric: { glyph: 'LT/LR', unit: 'índice' },
     context: 'Radiografía lateral de rodilla con flexión de ~30°',
     clinicalUse:
-      'Evalúa la altura de la rótula (patela alta o baja), asociada a inestabilidad rotuliana o a rigidez del aparato extensor.',
+      'Evalúa la altura de la rótula (rótula alta o baja), asociada a inestabilidad rotuliana o a rigidez del aparato extensor.',
     anatomyLead:
       'Es la relación entre la **longitud del tendón rotuliano** y la **longitud de la rótula** (eje mayor) medidas en la proyección lateral.',
     anatomy: [
@@ -354,11 +362,11 @@ const toolGuides: Record<string, ToolGuide> = {
     ],
     values: [
       { label: 'Normal', detail: '0.8 – 1.2', tone: 'normal' },
-      { label: 'Patela alta', detail: '> 1.2', tone: 'high' },
-      { label: 'Patela baja', detail: '< 0.8', tone: 'low' },
+      { label: 'Rótula alta', detail: '> 1.2', tone: 'high' },
+      { label: 'Rótula baja', detail: '< 0.8', tone: 'low' },
     ],
     interpretation:
-      'La patela alta se asocia a inestabilidad y luxación recidivante; la patela baja, a rigidez y a cirugía o traumatismo previo del aparato extensor.',
+      'La rótula alta se asocia a inestabilidad y luxación recidivante; la rótula baja, a rigidez y a cirugía o traumatismo previo del aparato extensor.',
     reference: {
       citation:
         'Insall J, Salvati E. Patella position in the normal knee joint. Radiology. 1971;101(1):101-104.',
