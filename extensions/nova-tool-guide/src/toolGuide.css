@@ -1,0 +1,517 @@
+/*
+ * Estilos de la guía de herramientas de medición (nova-tool-guide). Prefijo
+ * `nova-guide-` y estilos autocontenidos (sin Tailwind ni tema de OHIF), de
+ * modo que el widget se ve igual aunque se monte vía portal en <body>, fuera
+ * del árbol de la app.
+ *
+ * Tipografía: 'Inter' (la misma que carga el proyecto principal).
+ *
+ * Acentos = paleta azul del proyecto (platform/ui-next/src/tailwind.css):
+ *   #4A9EFF  --primary       (azul médico)
+ *   #00D9FF  --highlight     (cian brillante, = --primary-hover)
+ *   #5B82FF  --secondary     (azul secundario)
+ * Los tonos de estado clínico (verde/ámbar/naranja de la interpretación) son
+ * semánticos y NO forman parte del sistema de acentos.
+ */
+
+.nova-guide-root {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 2147482900; /* por encima del visor; por debajo del agente de conectividad */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  pointer-events: none; /* sólo los hijos interactivos capturan el ratón: nunca entorpece el canvas */
+}
+
+.nova-guide-root > * {
+  pointer-events: auto;
+}
+
+/* --- Avatar (logo NOVA, fondo transparente) ----------------------------- */
+.nova-guide-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  background: transparent;
+}
+
+.nova-guide-avatar svg {
+  display: block;
+}
+
+/* --- Burbuja compacta --------------------------------------------------- */
+.nova-guide-bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 388px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(22, 24, 32, 0.92);
+  backdrop-filter: blur(8px);
+  color: #e8eaf0;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+  animation: nova-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.nova-guide-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.nova-guide-bubble-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 6px 14px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.nova-guide-bubble-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nova-guide-bubble-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nova-guide-bubble-hint {
+  font-size: 12.5px;
+  color: #9aa3b2;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nova-guide-bubble-close {
+  align-self: flex-start;
+  margin: 5px 8px 0 0;
+}
+
+/* Barra de auto-cierre (5 s). Se reinicia al re-activar la tool y se pausa
+   con el ratón encima. */
+.nova-guide-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #4a9eff 0%, #00d9ff 100%);
+  transform-origin: left center;
+  animation: nova-guide-countdown 5s linear forwards;
+}
+
+.nova-guide-progress-paused {
+  animation-play-state: paused;
+}
+
+/* --- Cerrar (compartido) ------------------------------------------------ */
+.nova-guide-close {
+  border: none;
+  background: transparent;
+  color: #9aa3b2;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 8px;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.nova-guide-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* --- Tarjeta expandida --------------------------------------------------- */
+.nova-guide-card {
+  width: 448px;
+  max-width: calc(100vw - 32px);
+  max-height: min(82vh, 780px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(22, 24, 32, 0.96);
+  backdrop-filter: blur(10px);
+  color: #e8eaf0;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+  animation: nova-guide-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nova-guide-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.nova-guide-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.15;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nova-guide-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.nova-guide-badge {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9aa3b2;
+}
+
+.nova-guide-context {
+  flex: 0 0 auto;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 11px;
+  background: rgba(74, 158, 255, 0.12);
+  border: 1px solid rgba(74, 158, 255, 0.28);
+  font-size: 13px;
+  color: #a9d0ff;
+}
+
+/* Cuerpo con scroll propio si el contenido es alto. */
+.nova-guide-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.nova-guide-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.nova-guide-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+/* --- Sección delimitada ------------------------------------------------- */
+.nova-guide-section {
+  margin-top: 12px;
+  padding: 13px 15px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.nova-guide-section-title {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(74, 158, 255, 0.22);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4a9eff;
+}
+
+/* --- Uso clínico -------------------------------------------------------- */
+.nova-guide-clinical-use {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #c7ccd6;
+}
+
+/* --- Referencias anatómicas --------------------------------------------- */
+.nova-guide-anatomy-lead {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c7ccd6;
+}
+
+.nova-guide-anatomy-lead strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.nova-guide-anatomy {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #c7ccd6;
+}
+
+.nova-guide-anatomy li {
+  margin-top: 8px;
+}
+
+.nova-guide-pop-chip {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(74, 158, 255, 0.12);
+  border: 1px solid rgba(74, 158, 255, 0.28);
+  font-size: 11.5px;
+  color: #a9d0ff;
+  white-space: nowrap;
+}
+
+/* --- Diagrama de trazo -------------------------------------------------- */
+.nova-guide-diagram {
+  padding: 8px;
+  border-radius: 12px;
+  background: radial-gradient(120% 120% at 50% 20%, rgba(74, 158, 255, 0.14) 0%, rgba(10, 12, 18, 0.55) 70%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 320 / 200;
+}
+
+.nova-guide-diagram svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Pasos para el trazo ------------------------------------------------ */
+.nova-guide-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nova-guide-step {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.nova-guide-step:first-child {
+  margin-top: 0;
+}
+
+.nova-guide-step-num {
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #4a9eff 0%, #00d9ff 100%);
+}
+
+.nova-guide-step-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.nova-guide-step-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.35;
+}
+
+.nova-guide-step-detail {
+  font-size: 13px;
+  color: #9aa3b2;
+  line-height: 1.45;
+}
+
+/* --- Interpretación clínica --------------------------------------------- */
+.nova-guide-values {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.nova-guide-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid transparent;
+  font-size: 13.5px;
+}
+
+.nova-guide-value-label {
+  font-weight: 600;
+  color: #e8eaf0;
+}
+
+.nova-guide-value-detail {
+  color: #9aa3b2;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Estado clínico "normal": se resalta con el azul de la paleta. */
+.nova-guide-tone-normal {
+  background: rgba(74, 158, 255, 0.12);
+  border-left-color: #4a9eff;
+}
+.nova-guide-tone-normal .nova-guide-value-detail {
+  color: #7cc0ff;
+  font-weight: 700;
+}
+
+/* Estados de alerta: colores semánticos (no acentos de marca). */
+.nova-guide-tone-low {
+  border-left-color: #f5b14c;
+}
+
+.nova-guide-tone-high {
+  border-left-color: #ff7a59;
+}
+
+.nova-guide-interpretation {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #c7ccd6;
+}
+
+/* --- Bibliografía ------------------------------------------------------- */
+.nova-guide-citation {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #9aa3b2;
+}
+
+.nova-guide-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #4a9eff;
+  text-decoration: none;
+}
+
+.nova-guide-link:hover {
+  color: #00d9ff;
+  text-decoration: underline;
+}
+
+/* --- Nota orientativa --------------------------------------------------- */
+.nova-guide-disclaimer {
+  margin: 12px 0 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  color: #8b93a2;
+  line-height: 1.45;
+}
+
+/* --- Footer ------------------------------------------------------------- */
+.nova-guide-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.nova-guide-primary {
+  border: none;
+  border-radius: 11px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #4a9eff 0%, #00d9ff 100%);
+  transition: filter 140ms ease, transform 140ms ease;
+  white-space: nowrap;
+}
+
+.nova-guide-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* --- Animaciones --------------------------------------------------------- */
+@keyframes nova-guide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nova-guide-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* --- Responsive ---------------------------------------------------------- */
+@media (max-width: 640px) {
+  .nova-guide-root {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .nova-guide-bubble {
+    max-width: calc(100vw - 24px);
+  }
+  .nova-guide-card {
+    width: calc(100vw - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nova-guide-bubble,
+  .nova-guide-card {
+    animation: none;
+  }
+}

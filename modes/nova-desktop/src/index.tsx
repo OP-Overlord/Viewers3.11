@@ -12,6 +12,10 @@ import {
   mountConnectivityAgent,
   unmountConnectivityAgent,
 } from '../../../extensions/nova-connectivity/src';
+import {
+  mountToolGuideAgent,
+  unmountToolGuideAgent,
+} from '../../../extensions/nova-tool-guide/src';
 import './nova-theme.css';
 
 /**
@@ -176,6 +180,10 @@ function modeFactory({ modeConfiguration }) {
       // Agente informativo de conectividad (NOVA AI): aparece sólo si detecta
       // latencia alta o descarga lenta. No invasivo y puramente informativo.
       mountConnectivityAgent();
+
+      // Guía flotante de las herramientas de medición especializadas (menú
+      // "Medidas Especiales"): burbuja inferior derecha al activar la tool.
+      mountToolGuideAgent();
 
       measurementService.clearMeasurements();
 
@@ -595,6 +603,9 @@ function modeFactory({ modeConfiguration }) {
 
       // Retirar el agente de conectividad y detener el monitor.
       unmountConnectivityAgent();
+
+      // Retirar la guía de herramientas de medición.
+      unmountToolGuideAgent();
 
       const {
         toolGroupService,

@@ -1,0 +1,37 @@
+{
+  "name": "nova-tool-guide",
+  "version": "1.0.0",
+  "description": "Guía flotante de uso de herramientas de medición especializadas (ortopedia/cardiología) para NOVA Imaging SAS",
+  "author": "NOVA Imaging SAS",
+  "license": "MIT",
+  "main": "src/index.tsx",
+  "module": "src/index.tsx",
+  "files": [
+    "src/**",
+    "README.md"
+  ],
+  "repository": "OHIF/Viewers",
+  "keywords": [
+    "ohif-extension"
+  ],
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6",
+    "yarn": ">=1.18.0"
+  },
+  "scripts": {
+    "build": "echo \"nova-tool-guide is consumed from source\" && exit 0",
+    "build:package": "yarn run build",
+    "dev": "echo \"nova-tool-guide is consumed from source\" && exit 0",
+    "start": "yarn run dev"
+  },
+  "peerDependencies": {
+    "@cornerstonejs/core": "^3.0.0",
+    "@cornerstonejs/tools": "^3.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.20.13"
+  }
+}
