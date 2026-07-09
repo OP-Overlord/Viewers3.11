@@ -458,6 +458,209 @@
   color: var(--ng-fg-muted);
 }
 
+/* --- Botón "Ampliar" (zoom de la animación) ----------------------------- */
+.nova-guide-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 7px;
+  background: transparent;
+  font-family: var(--ng-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ng-fg-2);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.nova-guide-zoom-btn:hover {
+  color: var(--ng-cyan);
+  border-color: var(--ng-primary);
+  background: rgba(74, 158, 255, 0.08);
+}
+
+.nova-guide-zoom-btn:focus-visible {
+  outline: 2px solid var(--ng-cyan);
+  outline-offset: 2px;
+}
+
+.nova-guide-zoom-btn svg {
+  display: block;
+}
+
+/* --- Ventana modal de zoom ---------------------------------------------- */
+.nova-guide-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  animation: nova-guide-fade 180ms ease;
+}
+
+.nova-guide-zoom-dialog {
+  width: min(92vw, 720px);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 16px;
+  background: var(--ng-card);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: nova-guide-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nova-guide-zoom-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ng-border);
+}
+
+.nova-guide-zoom-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--ng-border-strong);
+  border-radius: 8px;
+  background: var(--ng-well);
+  font-family: var(--ng-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ng-cyan);
+}
+
+.nova-guide-zoom-title {
+  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ng-fg);
+  min-width: 0;
+}
+
+.nova-guide-zoom-figure {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 18px;
+  background: var(--ng-well);
+  aspect-ratio: 320 / 200;
+}
+
+.nova-guide-zoom-figure svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nova-guide-zoom-caption {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 11px 14px;
+  border-top: 1px solid var(--ng-border);
+  font-family: var(--ng-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ng-fg-muted);
+}
+
+/* --- Animación de trazado (diagramas) -----------------------------------
+ * La silueta anatómica queda ESTÁTICA; sólo se anima la construcción de la
+ * medida, dibujándose en el orden real del trazo: las líneas con
+ * stroke-dashoffset y los puntos/etiquetas con aparición escalonada. Bucle de
+ * 7.5 s con desvanecido común al final para un reinicio limpio.
+ */
+.nd-draw {
+  stroke-dasharray: var(--len, 240);
+}
+.nd-fade {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.nd-s1 { animation: nd-draw1 7.5s ease-in-out infinite; }
+.nd-s2 { animation: nd-draw2 7.5s ease-in-out infinite; }
+.nd-s3 { animation: nd-draw3 7.5s ease-in-out infinite; }
+.nd-s4 { animation: nd-draw4 7.5s ease-in-out infinite; }
+.nd-f1 { animation: nd-fade1 7.5s ease-in-out infinite; }
+.nd-f2 { animation: nd-fade2 7.5s ease-in-out infinite; }
+.nd-f3 { animation: nd-fade3 7.5s ease-in-out infinite; }
+.nd-f4 { animation: nd-fade4 7.5s ease-in-out infinite; }
+
+/* Líneas: se "dibujan" (dashoffset var(--len) → 0) en su turno y se mantienen;
+   todas se desvanecen a la vez (90→97 %) para reiniciar el bucle sin parpadeo. */
+@keyframes nd-draw1 {
+  0%, 4% { stroke-dashoffset: var(--len); }
+  14% { stroke-dashoffset: 0; }
+  90% { stroke-dashoffset: 0; opacity: 1; }
+  97%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes nd-draw2 {
+  0%, 16% { stroke-dashoffset: var(--len); }
+  26% { stroke-dashoffset: 0; }
+  90% { stroke-dashoffset: 0; opacity: 1; }
+  97%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes nd-draw3 {
+  0%, 28% { stroke-dashoffset: var(--len); }
+  38% { stroke-dashoffset: 0; }
+  90% { stroke-dashoffset: 0; opacity: 1; }
+  97%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes nd-draw4 {
+  0%, 40% { stroke-dashoffset: var(--len); }
+  50% { stroke-dashoffset: 0; }
+  90% { stroke-dashoffset: 0; opacity: 1; }
+  97%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* Puntos y etiquetas: aparecen en su turno y se desvanecen con el resto. */
+@keyframes nd-fade1 {
+  0%, 4% { opacity: 0; }
+  12% { opacity: 1; }
+  90% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+@keyframes nd-fade2 {
+  0%, 16% { opacity: 0; }
+  26% { opacity: 1; }
+  90% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+@keyframes nd-fade3 {
+  0%, 28% { opacity: 0; }
+  38% { opacity: 1; }
+  90% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+@keyframes nd-fade4 {
+  0%, 40% { opacity: 0; }
+  50% { opacity: 1; }
+  90% { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+
+@keyframes nova-guide-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* --- Pasos (libro mayor con guía vertical) ------------------------------ */
 .nova-guide-steps {
   position: relative;
@@ -755,5 +958,20 @@
   }
   .nova-guide-progress {
     animation-duration: 0s;
+  }
+  /* Sin animación de trazado: se muestra el diagrama completo y estático. */
+  .nd-draw,
+  .nd-fade {
+    animation: none !important;
+  }
+  .nd-draw {
+    stroke-dashoffset: 0 !important;
+  }
+  .nd-fade {
+    opacity: 1 !important;
+  }
+  .nova-guide-zoom-overlay,
+  .nova-guide-zoom-dialog {
+    animation: none;
   }
 }

@@ -61,10 +61,14 @@ export const ToolGuideAgent: React.FC = () => {
   const [tick, setTick] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
+  // Ventana de zoom de la animación del diagrama.
+  const [zoomed, setZoomed] = useState(false);
 
   const lastEventRef = useRef<{ name: string; at: number }>({ name: '', at: 0 });
   const expandedRef = useRef(false);
   expandedRef.current = expanded;
+  const zoomedRef = useRef(false);
+  zoomedRef.current = zoomed;
 
   useEffect(() => {
     const onToolActivated = (evt: Event) => {
@@ -94,6 +98,7 @@ export const ToolGuideAgent: React.FC = () => {
       setGuide(nextGuide);
       setExpanded(false);
       setHovered(false);
+      setZoomed(false);
       setTick(t => t + 1);
     };
 
@@ -112,13 +117,18 @@ export const ToolGuideAgent: React.FC = () => {
     return () => clearTimeout(t);
   }, [guide, tick, expanded, hovered]);
 
-  // Escape cierra la tarjeta expandida.
+  // Escape: si el zoom está abierto, lo cierra; si no, cierra la tarjeta.
   useEffect(() => {
     if (!expanded) {
       return;
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key !== 'Escape') {
+        return;
+      }
+      if (zoomedRef.current) {
+        setZoomed(false);
+      } else {
         setGuide(null);
         setExpanded(false);
       }
@@ -134,6 +144,7 @@ export const ToolGuideAgent: React.FC = () => {
   const dismiss = () => {
     setGuide(null);
     setExpanded(false);
+    setZoomed(false);
   };
 
   const Diagram = toolDiagrams[guide.toolName];
@@ -145,6 +156,7 @@ export const ToolGuideAgent: React.FC = () => {
       aria-live="polite"
     >
       {expanded ? (
+        <>
         <div
           className="nova-guide-card"
           role="dialog"
@@ -215,8 +227,27 @@ export const ToolGuideAgent: React.FC = () => {
             {Diagram && (
               <section className="nova-guide-section">
                 <div className="nova-guide-section-head">
-                  <span className="nova-guide-section-label">Diagrama de trazo</span>
-                  <span className="nova-guide-section-meta">esquema</span>
+                  <span className="nova-guide-section-label">Diagrama del trazo</span>
+                  <button
+                    className="nova-guide-zoom-btn"
+                    onClick={() => setZoomed(true)}
+                    title="Ampliar la animación"
+                    aria-label="Ampliar la animación en una ventana mayor"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="2" />
+                      <line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="10.5" y1="7.5" x2="10.5" y2="13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="7.5" y1="10.5" x2="13.5" y2="10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Ampliar
+                  </button>
                 </div>
                 <div className="nova-guide-section-body">
                   <figure className="nova-guide-figure">
@@ -233,7 +264,7 @@ export const ToolGuideAgent: React.FC = () => {
 
             <section className="nova-guide-section">
               <div className="nova-guide-section-head">
-                <span className="nova-guide-section-label">Pasos para el trazo</span>
+                <span className="nova-guide-section-label">Paso a paso</span>
                 <span className="nova-guide-section-meta">{guide.steps.length} pasos</span>
               </div>
               <div className="nova-guide-section-body">
@@ -328,6 +359,41 @@ export const ToolGuideAgent: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {zoomed && Diagram && (
+          <div
+            className="nova-guide-zoom-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Animación ampliada: ${guide.title}`}
+            onClick={() => setZoomed(false)}
+          >
+            <div
+              className="nova-guide-zoom-dialog"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="nova-guide-zoom-head">
+                <span className="nova-guide-zoom-glyph">{guide.metric.glyph}</span>
+                <span className="nova-guide-zoom-title">{guide.title}</span>
+                <button
+                  className="nova-guide-close"
+                  onClick={() => setZoomed(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar (Esc)"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="nova-guide-zoom-figure">
+                <Diagram />
+              </div>
+              <p className="nova-guide-zoom-caption">
+                Construcción geométrica de la medida (no es una radiografía real).
+              </p>
+            </div>
+          </div>
+        )}
+        </>
       ) : (
         <div
           className="nova-guide-bubble"
@@ -343,7 +409,10 @@ export const ToolGuideAgent: React.FC = () => {
             title="Ver la guía de esta medición"
           >
             <GuideAvatar />
-            <span className="nova-guide-bubble-divider" aria-hidden="true" />
+            <span
+              className="nova-guide-bubble-divider"
+              aria-hidden="true"
+            />
             <span className="nova-guide-bubble-texts">
               <span className="nova-guide-bubble-title">
                 <span
@@ -367,7 +436,7 @@ export const ToolGuideAgent: React.FC = () => {
           </button>
           <span
             key={tick}
-            className={`nova-guide-progress${hovered ? ' nova-guide-progress-paused' : ''}`}
+            className={`nova-guide-progress${hovered ? 'nova-guide-progress-paused' : ''}`}
             aria-hidden="true"
           />
         </div>

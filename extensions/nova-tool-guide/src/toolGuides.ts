@@ -125,7 +125,7 @@ const toolGuides: Record<string, ToolGuide> = {
     clinicalUse:
       'Detecta el aumento de la silueta cardíaca (cardiomegalia o derrame pericárdico) como cribado rápido en la radiografía de tórax.',
     anatomyLead:
-      'Es la relación entre el **diámetro cardíaco máximo** y el **diámetro torácico interno máximo** medidos sobre la misma proyección.',
+      'Es la relación entre el **ancho de la silueta cardíaca** —suma de las distancias de cada borde del corazón a la **línea media**— y el **diámetro torácico interno máximo**.',
     anatomy: [
       {
         population: 'Adultos',
@@ -142,16 +142,16 @@ const toolGuides: Record<string, ToolGuide> = {
         detail: 'De borde interno a borde interno costal, a la altura de las cúpulas diafragmáticas (2 clics).',
       },
       {
-        title: 'Marcar el borde cardíaco derecho',
-        detail: 'En su punto de máxima excursión lateral (1 clic).',
+        title: 'Marcar el borde cardíaco izquierdo',
+        detail: 'Punto de máxima excursión del borde izquierdo del corazón (1 clic).',
       },
       {
-        title: 'Marcar el borde cardíaco izquierdo',
-        detail: 'En su punto de máxima excursión lateral (1 clic).',
+        title: 'Marcar el borde cardíaco derecho',
+        detail: 'Punto de máxima excursión del borde derecho del corazón (1 clic).',
       },
       {
         title: 'Auto-cálculo',
-        detail: 'El visor calcula la relación ancho cardíaco / ancho torácico.',
+        detail: 'El diámetro cardíaco es la distancia entre ambos bordes; el visor calcula su relación con el diámetro torácico.',
       },
     ],
     values: [
