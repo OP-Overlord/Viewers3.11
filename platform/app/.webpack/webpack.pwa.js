@@ -8,7 +8,6 @@ const webpackBase = require('./../../../.webpack/webpack.base.js');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { InjectManifest } = require('workbox-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 // ~~ Directories
 const SRC_DIR = path.join(__dirname, '../src');
@@ -24,7 +23,6 @@ const PROXY_TARGET = process.env.PROXY_TARGET;
 const PROXY_DOMAIN = process.env.PROXY_DOMAIN;
 const PROXY_PATH_REWRITE_FROM = process.env.PROXY_PATH_REWRITE_FROM;
 const PROXY_PATH_REWRITE_TO = process.env.PROXY_PATH_REWRITE_TO;
-const IS_COVERAGE = process.env.COVERAGE === 'true';
 
 const OHIF_PORT = Number(process.env.OHIF_PORT || 3000);
 const ENTRY_TARGET = process.env.ENTRY_TARGET || `${SRC_DIR}/index.js`;
@@ -83,6 +81,15 @@ module.exports = (env, argv) => {
         path.resolve(__dirname, 'modes/nova-desktop/node_modules'),
         path.resolve(__dirname, 'extensions/nova-measures/node_modules'),
       ],
+      alias: {
+        // Replace onnxruntime-web (pulled in by @cornerstonejs/ai for SAM AI
+        // auto-segmentation) with an inert stub. Its emscripten Node.js branch
+        // throws "__filename is not defined" when the WASM backend initializes
+        // on a page reload with degraded WebGPU, which aborts the cornerstone
+        // extension boot and leaves the viewer gray. AI segmentation is not used
+        // in this deployment. See ./onnxruntime-web.stub.js.
+        'onnxruntime-web/webgpu$': path.resolve(__dirname, 'onnxruntime-web.stub.js'),
+      },
     },
     plugins: [
       // For debugging re-renders
@@ -129,19 +136,12 @@ module.exports = (env, argv) => {
           PUBLIC_URL: PUBLIC_URL,
         },
       }),
-      // Generate a service worker for fast local loads
-      ...(IS_COVERAGE
-        ? []
-        : [
-            new InjectManifest({
-              swDest: 'sw.js',
-              swSrc: path.join(SRC_DIR, 'service-worker.js'),
-              // Need to exclude the theme as it is updated independently
-              exclude: [/theme/],
-              // Cache large files for the manifests to avoid warning messages
-              maximumFileSizeToCacheInBytes: 1024 * 1024 * 50,
-            }),
-          ]),
+      // NOTE: The PWA service worker was intentionally removed. Its
+      // StaleWhileRevalidate strategy served stale JS chunks after each deploy,
+      // producing a gray screen until a hard reload. A static kill-switch
+      // `sw.js` (in public/) is copied to dist instead so any previously
+      // installed service worker self-destructs. See public/sw.js and
+      // public/init-service-worker.js.
     ],
     // https://webpack.js.org/configuration/dev-server/
     devServer: {

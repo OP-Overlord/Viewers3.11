@@ -1,55 +1,28 @@
-navigator.serviceWorker.getRegistrations().then(function (registrations) {
-  for (let registration of registrations) {
-    registration.unregister();
-  }
-});
-
-// https://developers.google.com/web/tools/workbox/modules/workbox-window
-// All major browsers that support service worker also support native JavaScript
-// modules, so it's perfectly fine to serve this code to any browsers
-// (older browsers will just ignore it)
+// Service worker registration is intentionally DISABLED.
 //
-//import { Workbox } from './workbox-window.prod.mjs';
-// proper initialization
-if ('function' === typeof importScripts) {
-  importScripts(
-    'https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-window.prod.mjs'
-  );
+// The previous PWA service worker cached JS/CSS with a StaleWhileRevalidate
+// strategy, which served stale chunks after each deploy and left the viewer on
+// a gray screen until a hard reload. We no longer register a service worker.
+//
+// This script only tears down any service worker a previous build installed:
+// it unregisters existing registrations and clears the Cache Storage on the
+// client. A static kill-switch `sw.js` (served alongside the app) handles the
+// clients whose stale service worker would otherwise keep serving this file
+// from cache.
 
-  var supportsServiceWorker = 'serviceWorker' in navigator;
-  var isNotLocalDevelopment = ['localhost', '127'].indexOf(location.hostname) === -1;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  });
 
-  if (supportsServiceWorker && isNotLocalDevelopment) {
-    const swFileLocation = (window.PUBLIC_URL || '/') + 'sw.js';
-    const wb = new Workbox(swFileLocation);
-
-    // Add an event listener to detect when the registered
-    // service worker has installed but is waiting to activate.
-    wb.addEventListener('waiting', () => {
-      // Assumes your app has some sort of prompt UI element
-      // that a user can either accept or reject.
-      // const prompt = createUIPrompt({
-      //  onAccept: async () => {
-      // Assuming the user accepted the update, set up a listener
-      // that will reload the page as soon as the previously waiting
-      // service worker has taken control.
-      wb.addEventListener('controlling', event => {
-        window.location.reload();
+  if (self.caches && caches.keys) {
+    caches
+      .keys()
+      .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+      .catch(() => {
+        /* no-op: Cache Storage may be unavailable */
       });
-
-      // Send a message telling the service worker to skip waiting.
-      // This will trigger the `controlling` event handler above.
-      // Note: for this to work, you have to add a message
-      // listener in your service worker. See below.
-      wb.messageSW({ type: 'SKIP_WAITING' });
-      // },
-
-      // onReject: () => {
-      //   prompt.dismiss();
-      // },
-      // });
-    });
-
-    wb.register();
   }
 }
