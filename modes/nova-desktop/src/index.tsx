@@ -3,6 +3,7 @@ import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import { id } from './id';
 import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
+import { registerNovaProbeTool } from '../../../extensions/nova-measures/src/NovaProbeTool';
 import AudioCinePlayer from '../../../extensions/nova-cine/src/AudioCinePlayer';
 import { cineViewportStore } from '../../../extensions/nova-cine/src/cineViewportStore';
 import hpXA from './hpXA';
@@ -283,6 +284,11 @@ function modeFactory({ modeConfiguration }) {
       // izquierda y series NO-DOC complementarias a la derecha (1/2/3 según
       // cuántas haya). Su id ya está listado en `hangingProtocol`.
       servicesManager.services.hangingProtocolService.addProtocol(hpDoc.id, hpDoc);
+
+      // Reemplaza el ProbeTool por defecto por NovaProbeTool (HU corregido en
+      // stack viewports). DEBE ir antes de initToolGroups, que instancia los
+      // tools desde el registro global.
+      registerNovaProbeTool();
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);

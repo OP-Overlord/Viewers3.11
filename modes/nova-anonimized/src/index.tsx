@@ -3,6 +3,7 @@ import toolbarButtons from './toolbarButtons';
 import initToolGroups from './initToolGroups';
 import { id } from './id';
 import { preloadThumbnails } from '../../../extensions/nova-layout/src/Panels/preloadThumbnails';
+import { registerNovaProbeTool } from '../../../extensions/nova-measures/src/NovaProbeTool';
 import {
   mountConnectivityAgent,
   unmountConnectivityAgent,
@@ -142,6 +143,11 @@ function modeFactory({ modeConfiguration }) {
       mountConnectivityAgent();
 
       measurementService.clearMeasurements();
+
+      // Reemplaza el ProbeTool por defecto por NovaProbeTool (HU corregido en
+      // stack viewports). DEBE ir antes de initToolGroups, que instancia los
+      // tools desde el registro global.
+      registerNovaProbeTool();
 
       // Init Default and SR ToolGroups
       initToolGroups(extensionManager, toolGroupService, commandsManager);

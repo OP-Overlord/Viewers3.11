@@ -15,7 +15,7 @@ import './MobileViewportV2.css';
 
 // Modalidades de cine que se auto-reproducen al abrir la serie (loops temporales).
 // El resto de modalidades multiframe muestran el cine solo bajo demanda (botón).
-const CINE_AUTOPLAY_MODALITIES = new Set(['US', 'RF', 'XA']);
+const CINE_AUTOPLAY_MODALITIES = new Set(['RF', 'XA']);
 
 const LOG_PREFIX = '[MobileViewportV2]';
 const RESIZE_DEBOUNCE_MS = 200;
