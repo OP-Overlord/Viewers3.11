@@ -16,7 +16,13 @@
  * Es síncrona a propósito: el evaluador de toolbar de OHIF es síncrono.
  */
 
-export type DeviceTier = 'software' | 'integrated' | 'dedicated' | 'unknown';
+export type DeviceTier =
+  | 'software'
+  | 'integrated'
+  /** Integrada moderna sobre equipo con recursos de estación de trabajo. */
+  | 'integratedHigh'
+  | 'dedicated'
+  | 'unknown';
 
 export interface DeviceCapabilities {
   /** Clasificación gruesa de la GPU. */
@@ -109,12 +115,58 @@ const WEAK_DEDICATED_HINTS = [
   'radeon hd', // generaciones antiguas
 ];
 
-function classifyTier(
-  renderer: string,
-  vendor: string,
-  hasContext: boolean,
-  deviceMemoryGB?: number
-): DeviceTier {
+// ---------------------------------------------------------------------------
+// Sub-tier "integrada moderna" (integratedHigh)
+// ---------------------------------------------------------------------------
+// En una GPU integrada la VRAM es RAM del sistema compartida, así que el techo
+// real de un volumen depende de la RAM del equipo, no solo del modelo de iGPU.
+// Un Iris Xe sobre una estación de 32 GB tiene mucho más margen que un Intel UHD
+// sobre un portátil de 8 GB, y hasta ahora ambos caían en el mismo tier.
+//
+// Cuando el equipo tiene recursos de estación de trabajo, la integrada se
+// promueve a 'integratedHigh', que usa umbrales intermedios (ver thresholds.ts).
+//
+// OJO: esto NO aplica a las dedicadas de gama de entrada (WEAK_DEDICATED_HINTS).
+// Esas tienen su propia VRAM, pequeña y fija; la RAM del sistema no las ayuda.
+//
+// Limitación conocida: `navigator.deviceMemory` solo existe en navegadores
+// Chromium y está topado en 8 (32 GB reporta 8). En Firefox/Safari es undefined
+// y no se promueve: se queda en el tier conservador.
+const WORKSTATION_MIN_MEMORY_GB = 8;
+const WORKSTATION_MIN_CORES = 12;
+const WORKSTATION_MIN_3D_TEXTURE = 2048;
+
+function hasWorkstationResources(
+  deviceMemoryGB: number | undefined,
+  logicalCores: number | undefined,
+  max3DTextureSize: number
+): boolean {
+  return (
+    typeof deviceMemoryGB === 'number' &&
+    deviceMemoryGB >= WORKSTATION_MIN_MEMORY_GB &&
+    typeof logicalCores === 'number' &&
+    logicalCores >= WORKSTATION_MIN_CORES &&
+    max3DTextureSize >= WORKSTATION_MIN_3D_TEXTURE
+  );
+}
+
+interface ClassifyInput {
+  renderer: string;
+  vendor: string;
+  hasContext: boolean;
+  deviceMemoryGB?: number;
+  logicalCores?: number;
+  max3DTextureSize: number;
+}
+
+function classifyTier({
+  renderer,
+  vendor,
+  hasContext,
+  deviceMemoryGB,
+  logicalCores,
+  max3DTextureSize,
+}: ClassifyInput): DeviceTier {
   if (!hasContext) {
     return 'software';
   }
@@ -125,20 +177,28 @@ function classifyTier(
     return 'software';
   }
   // Las dedicadas de gama de entrada (930MX, MX150, GT 1030...) se tratan como
-  // integradas: tienen el mismo riesgo de crash con volúmenes grandes.
+  // integradas: tienen el mismo riesgo de crash con volúmenes grandes. No se
+  // promueven a 'integratedHigh': su VRAM es propia y limitada.
   if (WEAK_DEDICATED_HINTS.some(h => haystack.includes(h))) {
     return 'integrated';
   }
   if (DEDICATED_HINTS.some(h => haystack.includes(h))) {
     return 'dedicated';
   }
+
+  const isWorkstation = hasWorkstationResources(deviceMemoryGB, logicalCores, max3DTextureSize);
+
   if (INTEGRATED_HINTS.some(h => haystack.includes(h))) {
-    return 'integrated';
+    return isWorkstation ? 'integratedHigh' : 'integrated';
   }
   // Sin pistas claras: si el navegador reporta poca RAM, asumir integrada;
+  // si el equipo es una estación de trabajo, tratarla como integrada moderna;
   // si no hay info, 'unknown' (se trata conservador aguas arriba).
   if (typeof deviceMemoryGB === 'number' && deviceMemoryGB <= 4) {
     return 'integrated';
+  }
+  if (isWorkstation) {
+    return 'integratedHigh';
   }
   return 'unknown';
 }
@@ -148,8 +208,7 @@ function probe(): DeviceCapabilities {
     typeof navigator !== 'undefined' && 'deviceMemory' in navigator
       ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory
       : undefined;
-  const logicalCores =
-    typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
+  const logicalCores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
 
   let renderer = '';
   let vendor = '';
@@ -191,9 +250,11 @@ function probe(): DeviceCapabilities {
         maxTextureSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) || 0;
         if (webgl2) {
           max3DTextureSize =
-            Number((gl as WebGL2RenderingContext).getParameter(
-              (gl as WebGL2RenderingContext).MAX_3D_TEXTURE_SIZE
-            )) || 0;
+            Number(
+              (gl as WebGL2RenderingContext).getParameter(
+                (gl as WebGL2RenderingContext).MAX_3D_TEXTURE_SIZE
+              )
+            ) || 0;
         }
       } catch {
         // dejar valores por defecto
@@ -208,7 +269,14 @@ function probe(): DeviceCapabilities {
     }
   }
 
-  const tier = classifyTier(renderer, vendor, hasContext, deviceMemoryGB);
+  const tier = classifyTier({
+    renderer,
+    vendor,
+    hasContext,
+    deviceMemoryGB,
+    logicalCores,
+    max3DTextureSize,
+  });
 
   return {
     tier,
@@ -239,9 +307,7 @@ export function getDeviceCapabilities(): DeviceCapabilities {
  * Ejemplo en consola:
  *   window.__novaSetDeviceCaps({ tier: 'integrated', max3DTextureSize: 2048 });
  */
-export function setDeviceCapabilitiesOverride(
-  partial: Partial<DeviceCapabilities> | null
-): void {
+export function setDeviceCapabilitiesOverride(partial: Partial<DeviceCapabilities> | null): void {
   override = partial;
 }
 
@@ -249,6 +315,5 @@ export function setDeviceCapabilitiesOverride(
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__novaSetDeviceCaps =
     setDeviceCapabilitiesOverride;
-  (window as unknown as Record<string, unknown>).__novaGetDeviceCaps =
-    getDeviceCapabilities;
+  (window as unknown as Record<string, unknown>).__novaGetDeviceCaps = getDeviceCapabilities;
 }

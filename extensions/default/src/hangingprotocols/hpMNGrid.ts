@@ -5,14 +5,24 @@ import { viewportOptions } from './utils/viewportOptions';
 
 /**
  * Opciones de viewport para mnGrid que, al cargar cada serie, posicionan el
- * viewport en el corte MEDIO (en vez del primero) usando el preset 'middle'
- * de initialImageOptions (ver CornerstoneViewportService._getInitialImageIndex).
+ * viewport en el corte MEDIO solo si la serie es CT o MR; el resto de
+ * modalidades abren en la primera instancia (indice 0).
+ *
+ * La decision es por serie, asi que no puede ser estatica: se delega en el
+ * atributo custom 'ctMrInitialSlice' (utils/ctMrInitialSlice.ts), que
+ * HangingProtocolService.getComputedOptions resuelve con los displaySets ya
+ * casados y devuelve { preset: 'middle' } o { index: 0 }
+ * (ver CornerstoneViewportService._getInitialImageIndex).
  */
+const initialImageOptionsCtMr = {
+  custom: 'ctMrInitialSlice',
+  // Si el atributo no puede resolverse (sin displaySet casado), primera imagen.
+  defaultValue: { index: 0 },
+};
+
 const viewportOptionsMiddleSlice = {
   ...viewportOptions,
-  initialImageOptions: {
-    preset: 'middle',
-  },
+  initialImageOptions: initialImageOptionsCtMr,
 };
 
 /**
@@ -52,10 +62,8 @@ export const hpMN: Types.HangingProtocol.Protocol = {
     viewportOptions: {
       viewportType: 'stack',
       toolGroupId: 'default',
-      // Posicionar en el corte medio al añadir viewports con el layout tool.
-      initialImageOptions: {
-        preset: 'middle',
-      },
+      // Corte medio solo para CT/MR al añadir viewports con el layout tool.
+      initialImageOptions: initialImageOptionsCtMr,
       syncGroups: [HYDRATE_SEG_SYNC_GROUP],
     },
     displaySets: [

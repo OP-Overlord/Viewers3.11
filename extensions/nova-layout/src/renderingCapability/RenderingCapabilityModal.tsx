@@ -6,8 +6,11 @@
  * comparativa "Tu equipo / serie" vs "Recomendado para este equipo" y, según la
  * severidad:
  *
- *   - 'warn'  → botones "Cancelar" y "Continuar bajo mi responsabilidad" (override).
- *   - 'block' → botón único "Entendido" (sin override).
+ *   - 'warn'  → "Cancelar" + "Continuar bajo mi responsabilidad".
+ *   - 'block' → "Cancelar" + "Continuar de todos modos", con aviso más fuerte.
+ *
+ * En NINGÚN caso se impide usar la herramienta: el popup informa y pide una
+ * confirmación explícita, pero el usuario siempre puede continuar.
  *
  * Estilado con los tokens del theme de @ohif/ui-next (la paleta Tailwind del
  * core NO incluye amber/green/blue/gray estándar; usar success/warning/error/
@@ -22,6 +25,7 @@ import { formatBytes } from './assessHeavyRendering';
 const TIER_LABEL: Record<string, string> = {
   software: 'Sin GPU (renderizado por software)',
   integrated: 'GPU integrada',
+  integratedHigh: 'GPU integrada (equipo de altas prestaciones)',
   dedicated: 'GPU dedicada',
   unknown: 'GPU no identificada',
 };
@@ -50,7 +54,12 @@ function buildRows(a: CapabilityAssessment): SpecRow[] {
     label: 'Tarjeta gráfica',
     current: `${TIER_LABEL[device.tier] ?? device.tier} · ${device.renderer}`,
     recommended: 'GPU dedicada (NVIDIA / AMD Radeon RX / Apple M)',
-    status: device.tier === 'dedicated' ? 'ok' : device.tier === 'software' ? 'block' : 'warn',
+    status:
+      device.tier === 'dedicated' || device.tier === 'integratedHigh'
+        ? 'ok'
+        : device.tier === 'software'
+          ? 'block'
+          : 'warn',
   });
 
   // Cortes de la serie
@@ -123,7 +132,7 @@ interface Props {
   /** Inyectado por el UIModalService (ui-next usa `hide`; otros, `onClose`). */
   hide?: () => void;
   onClose?: () => void;
-  /** Solo presente en severidad 'warn'. */
+  /** Confirmación del usuario. Presente en 'warn' y en 'block'. */
   onContinue?: () => void;
 }
 
@@ -140,9 +149,10 @@ export default function RenderingCapabilityModal({ assessment, hide, onClose, on
   const featureName = FEATURE_TITLE[assessment.feature] ?? 'esta función';
 
   const intro = isBlock
-    ? `Para proteger la estabilidad del visor, ${featureName} se ha deshabilitado en este ` +
-      `equipo para la serie seleccionada. La configuración actual no alcanza el mínimo ` +
-      `necesario y activarla podría provocar el cierre inesperado del visor.`
+    ? `Este equipo no alcanza la configuración recomendada para ejecutar ${featureName} con ` +
+      `la serie seleccionada. Puedes activarla de todos modos, pero es probable que el visor ` +
+      `se ralentice de forma notable o se cierre de forma inesperada; en ese caso, vuelve a ` +
+      `abrir el estudio y continúa con la visualización 2D.`
     : `${featureName} puede ejecutarse en este equipo, pero la serie seleccionada está por ` +
       `encima del rango óptimo. Es posible que el visor se ralentice o se vuelva inestable. ` +
       `Puedes continuar bajo tu responsabilidad o seguir con la visualización 2D.`;
@@ -157,7 +167,12 @@ export default function RenderingCapabilityModal({ assessment, hide, onClose, on
           aria-hidden
         >
           {/* triángulo de advertencia */}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <path
               d="M12 3 2 20h20L12 3Zm0 6v5m0 3v.5"
               stroke="currentColor"
@@ -181,7 +196,10 @@ export default function RenderingCapabilityModal({ assessment, hide, onClose, on
           </thead>
           <tbody>
             {rows.map(row => (
-              <tr key={row.label} className="border-border-subtle border-t">
+              <tr
+                key={row.label}
+                className="border-border-subtle border-t"
+              >
                 <td className="text-foreground-secondary px-3 py-2">{row.label}</td>
                 <td className="px-3 py-2">
                   <span className="flex items-center gap-2">
@@ -211,27 +229,23 @@ export default function RenderingCapabilityModal({ assessment, hide, onClose, on
       </p>
 
       <div className="mt-4 flex justify-end gap-2">
-        {isBlock ? (
-          <Button onClick={close}>Entendido</Button>
-        ) : (
-          <>
-            <Button
-              variant="secondary"
-              onClick={close}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="warning"
-              onClick={() => {
-                onContinue?.();
-                close();
-              }}
-            >
-              Continuar bajo mi responsabilidad
-            </Button>
-          </>
-        )}
+        <Button
+          variant="secondary"
+          onClick={close}
+        >
+          Cancelar
+        </Button>
+        <Button
+          variant={isBlock ? 'destructive' : 'warning'}
+          onClick={() => {
+            onContinue?.();
+            close();
+          }}
+        >
+          {isBlock
+            ? 'Continuar de todos modos (no recomendado)'
+            : 'Continuar bajo mi responsabilidad'}
+        </Button>
       </div>
     </div>
   );

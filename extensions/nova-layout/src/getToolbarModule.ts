@@ -4,8 +4,12 @@
  * Evaluador OPCIONAL `evaluate.novaHeavyRenderingCapable` para greyear botones
  * volumétricos según la capacidad del equipo/serie. Es un utilitario reutilizable:
  * el guard PRINCIPAL ya no depende de los botones, se aplica de forma central
- * interceptando los comandos MPR/3D (ver `preRegistration.ts`). Este evaluador
- * queda disponible por si se quiere además deshabilitar visualmente algún botón.
+ * interceptando los comandos MPR/3D (ver `preRegistration.ts`).
+ *
+ * POLÍTICA ACTUAL: la herramienta nunca se prohíbe; el guard central advierte y
+ * el usuario decide. Por eso el default de este evaluador es `greyOn: 'never'`
+ * (no deshabilita nada). Los modos 'block'/'software' se conservan por si algún
+ * despliegue quiere deshabilitar visualmente un botón concreto.
  *
  * El toolbar de OHIF permite combinar varios evaluadores en un arreglo y
  * deshabilita el botón si CUALQUIERA devuelve `disabled: true`
@@ -23,22 +27,27 @@ export default function getToolbarModule({ servicesManager, extensionManager }: 
       name: 'evaluate.novaHeavyRenderingCapable',
       // Opciones inyectables desde el botón:
       //   evaluate: [{ name: '...', feature: 'mpr', greyOn: 'software' }]
-      // - greyOn: 'block'    (def) → deshabilita el botón en el límite duro.
-      //                                Úsalo cuando NO hay popup que lo explique
-      //                                (p.ej. el menú de orientación).
-      // - greyOn: 'software'        → deshabilita SOLO si no hay GPU. El resto de
-      //                                casos los explica el popup del guard central.
+      // - greyOn: 'never'    (def) → nunca deshabilita. El guard central advierte
+      //                                y el usuario decide si continúa.
+      // - greyOn: 'software'        → deshabilita SOLO si no hay GPU.
+      // - greyOn: 'block'           → deshabilita en la banda "no recomendada".
+      //                                Contradice la política de "siempre
+      //                                disponible": usar solo de forma deliberada.
       evaluate: ({
         viewportId,
         feature = 'mpr',
-        greyOn = 'block',
+        greyOn = 'never',
         disabledText = DEFAULT_DISABLED_TEXT,
       }: {
         viewportId?: string;
         feature?: HeavyFeature;
-        greyOn?: 'block' | 'software';
+        greyOn?: 'never' | 'block' | 'software';
         disabledText?: string;
       }) => {
+        if (greyOn === 'never') {
+          return { disabled: false };
+        }
+
         try {
           const assessment = assessViewportCapability(servicesManager, extensionManager, {
             viewportId,

@@ -2,9 +2,12 @@
  * runCapabilityGuard — flujo compartido de la compuerta preventiva.
  *
  * Evalúa el viewport activo y:
- *   - 'ok'    → ejecuta `onProceed` (la acción real)
- *   - 'warn'  → popup con "Continuar bajo mi responsabilidad" (ejecuta `onProceed`)
- *   - 'block' → popup informativo sin override (NO ejecuta `onProceed`)
+ *   - 'ok'    → ejecuta `onProceed` (la acción real), sin fricción
+ *   - 'warn'  → popup con "Continuar bajo mi responsabilidad"
+ *   - 'block' → popup con aviso fuerte de configuración NO recomendada
+ *
+ * En 'warn' y 'block' el usuario SIEMPRE puede continuar: la compuerta informa y
+ * pide confirmación, nunca prohíbe. Solo cambia el tono del aviso.
  *
  * Lo usan tanto el interceptor central de comandos (preRegistration) como
  * cualquier consumidor explícito. No requiere JSX (el modal se pasa por
@@ -20,7 +23,7 @@ export interface RunCapabilityGuardArgs {
   extensionManager: any;
   feature: HeavyFeature;
   viewportId?: string;
-  /** Acción real a ejecutar si se permite ('ok') o si el usuario fuerza ('warn'). */
+  /** Acción real: se ejecuta en 'ok' o cuando el usuario confirma el aviso. */
   onProceed: () => void;
   /** Etiqueta para el log de diagnóstico. */
   source?: string;
@@ -58,12 +61,14 @@ export function runCapabilityGuard({
   uiModalService.show({
     title:
       assessment.severity === 'block'
-        ? 'Función no disponible en este equipo'
+        ? 'Configuración no recomendada para esta serie'
         : 'Rendimiento limitado para esta serie',
     content: RenderingCapabilityModal,
     contentProps: {
       assessment,
-      onContinue: assessment.severity === 'warn' ? onProceed : undefined,
+      // Siempre se ofrece continuar, también en 'block': la compuerta advierte,
+      // no prohíbe.
+      onContinue: onProceed,
     },
   });
 }

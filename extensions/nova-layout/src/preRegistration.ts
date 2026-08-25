@@ -10,8 +10,9 @@
  * SIEMPRE, venga el clic del botón MPR, de un atajo o de cualquier otra vía.
  *
  * Para cada comando: si el `protocolId` es de un protocolo pesado, evaluamos el
- * equipo + la serie y decidimos ok / warn (popup con override) / block (popup
- * informativo). Cualquier otro protocolo pasa directo sin tocar nada.
+ * equipo + la serie y decidimos ok (directo) / warn (popup) / block (popup con
+ * aviso fuerte). En warn y block el usuario SIEMPRE puede continuar: la
+ * compuerta advierte, no prohíbe. Cualquier otro protocolo pasa directo.
  */
 
 import { runCapabilityGuard, type HeavyFeature } from './renderingCapability';

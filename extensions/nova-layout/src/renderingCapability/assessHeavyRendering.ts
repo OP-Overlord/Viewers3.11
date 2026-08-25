@@ -3,11 +3,16 @@
  * ------------------------------------------------------------------------------
  * Núcleo de la regla preventiva. Dado el/los displaySet del viewport activo, la
  * funcionalidad solicitada (MPR / Volume Rendering / 3D) y las capacidades del
- * equipo, decide si es seguro continuar:
+ * equipo, decide con cuánta fricción se ejecuta:
  *
- *   severity 'ok'    → ejecutar normal
- *   severity 'warn'  → permitir, pero avisar (popup con "continuar bajo mi resp.")
- *   severity 'block' → no ejecutar (botón greyed + popup informativo sin override)
+ *   severity 'ok'    → ejecutar normal, sin popup
+ *   severity 'warn'  → avisar (popup con "continuar bajo mi responsabilidad")
+ *   severity 'block' → configuración NO recomendada: popup con aviso fuerte
+ *
+ * IMPORTANTE: 'block' NO impide usar la herramienta. La política del producto es
+ * que el usuario siempre pueda continuar; lo que cambia es el tono del aviso y
+ * el hecho de que debe confirmarlo explícitamente. El nombre 'block' se conserva
+ * por compatibilidad con la config de despliegue (`blockInstances`).
  *
  * La lógica es síncrona y pura (sin efectos), para poder usarse tanto en el
  * evaluador de toolbar (síncrono) como en el comando guard.
@@ -33,8 +38,11 @@ export interface SeriesMetrics {
 export interface CapabilityAssessment {
   feature: HeavyFeature;
   severity: Severity;
-  /** true salvo en 'block'. */
-  allowed: boolean;
+  /**
+   * true si hay que pedir confirmación explícita al usuario antes de ejecutar
+   * ('warn' y 'block'). Nunca implica prohibición: siempre se puede continuar.
+   */
+  requiresConfirmation: boolean;
   reasons: string[];
   device: DeviceCapabilities;
   thresholds: TierThresholds;
@@ -121,17 +129,27 @@ export function assessHeavyRendering(
   const reasons: string[] = [];
   let severity: Severity = 'ok';
 
-  // 1) Sin GPU real → bloqueo total de lo volumétrico.
+  // 1) Sin GPU real → advertencia fuerte (es el escenario con más riesgo real
+  // de cierre inesperado, pero se permite continuar bajo confirmación).
   if (device.tier === 'software') {
     severity = 'block';
     reasons.push(
       `El equipo no dispone de aceleración por GPU (renderizado por software), ` +
-        `por lo que ${featureLabel} no puede ejecutarse de forma estable.`
+        `por lo que ${featureLabel} probablemente no se ejecute de forma estable.`
     );
-    return { feature, severity, allowed: false, reasons, device, thresholds, series, maxSliceDim };
+    return {
+      feature,
+      severity,
+      requiresConfirmation: true,
+      reasons,
+      device,
+      thresholds,
+      series,
+      maxSliceDim,
+    };
   }
 
-  // 2) Resolución por corte mayor que el límite de textura 3D → bloqueo.
+  // 2) Resolución por corte mayor que el límite de textura 3D → no recomendado.
   if (maxSliceDim > 0 && (series.rows > maxSliceDim || series.columns > maxSliceDim)) {
     severity = worse(severity, 'block');
     reasons.push(
@@ -140,7 +158,7 @@ export function assessHeavyRendering(
     );
   }
 
-  // 3) Memoria estimada del volumen mayor que el presupuesto → bloqueo.
+  // 3) Memoria estimada del volumen mayor que el presupuesto → no recomendado.
   if (thresholds.maxVolumeBytes > 0 && series.estimatedVolumeBytes > thresholds.maxVolumeBytes) {
     severity = worse(severity, 'block');
     reasons.push(
@@ -153,8 +171,8 @@ export function assessHeavyRendering(
   if (series.sliceCount > thresholds.blockInstances) {
     severity = worse(severity, 'block');
     reasons.push(
-      `La serie tiene ${series.sliceCount} cortes; supera el máximo seguro para este equipo ` +
-        `(${thresholds.blockInstances}).`
+      `La serie tiene ${series.sliceCount} cortes; supera con holgura el máximo recomendado ` +
+        `para este equipo (${thresholds.blockInstances}).`
     );
   } else if (series.sliceCount > thresholds.safeInstances) {
     severity = worse(severity, 'warn');
@@ -167,7 +185,7 @@ export function assessHeavyRendering(
   return {
     feature,
     severity,
-    allowed: severity !== 'block',
+    requiresConfirmation: severity !== 'ok',
     reasons,
     device,
     thresholds,
